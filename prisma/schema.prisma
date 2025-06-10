@@ -1,0 +1,158 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String?
+  phone     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ranches   Ranch[]
+  accounts  Account[]
+  sessions  Session[]
+}
+
+model Ranch {
+  id        String   @id @default(uuid())
+  name      String
+  location  String
+  size      Float?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  cattle    Cattle[]
+  tasks     Task[]
+  productions Production[]
+}
+
+model Cattle {
+  id                String       @id @default(uuid())
+  internalId        String
+  breed             String
+  gender            CattleGender
+  birthDate         DateTime
+  weight            Float?
+  ranchId           String
+  ranch             Ranch        @relation(fields: [ranchId], references: [id])
+  crossBreed        String?
+  purityLevel       String?
+  developmentStage  String?
+  fatherId          String?
+  motherId          String?
+  lastBirth         DateTime?
+  lactationCycle    Int?
+  reproductiveStage String?
+  status            CattleStatus @default(ACTIVE)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  productions       Production[]
+  tasks             Task[]
+}
+
+model Production {
+  id        String          @id @default(uuid())
+  cattleId  String
+  cattle    Cattle          @relation(fields: [cattleId], references: [id])
+  ranchId   String
+  ranch     Ranch           @relation(fields: [ranchId], references: [id])
+  date      DateTime
+  liters    Float
+  shift     ProductionShift @default(MORNING)
+  quality   String?
+  notes     String?
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+}
+
+model Task {
+  id          String        @id @default(uuid())
+  title       String
+  description String?
+  dueDate     DateTime
+  frequency   TaskFrequency @default(ONCE)
+  status      TaskStatus    @default(PENDING)
+  userId      String
+  ranchId     String
+  ranch       Ranch         @relation(fields: [ranchId], references: [id])
+  cattleId    String?
+  cattle      Cattle?       @relation(fields: [cattleId], references: [id])
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  completedAt DateTime?
+}
+
+// Enums
+enum CattleGender {
+  MALE
+  FEMALE
+}
+
+enum CattleStatus {
+  ACTIVE
+  SOLD
+  DECEASED
+  RETIRED
+}
+
+enum ProductionShift {
+  MORNING
+  AFTERNOON
+  EVENING
+}
+
+enum TaskFrequency {
+  ONCE
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+enum TaskStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+}
+
+// Modelos requeridos por next-auth
+model Account {
+  id                String  @id @default(uuid())
+  userId            String
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  sessionToken String   @unique
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expires      DateTime
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+  
+  @@unique([identifier, token])
+}

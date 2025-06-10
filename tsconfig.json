@@ -1,27 +1,79 @@
 {
-"compilerOptions": {
-"target": "es5",
-"lib": ["dom", "dom.iterable", "esnext"],
-"allowJs": true,
-"skipLibCheck": true,
-"strict": true,
-"noEmit": true,
-"esModuleInterop": true,
-"module": "esnext",
-"moduleResolution": "bundler",
-"resolveJsonModule": true,
-"isolatedModules": true,
-"jsx": "preserve",
-"incremental": true,
-"plugins": [
-{
-"name": "next"
-}
-],
-"paths": {
-"@/": ["./src/"]
-}
-},
-"include": ["next-env.d.ts", "/*.ts", "/.tsx", ".next/types/**/.ts"],
-"exclude": ["node_modules"]
+  "compilerOptions": {
+    // ✅ Updated target - ES2018 supports modern features
+    "target": "es2018",
+    "lib": [
+      "dom",
+      "dom.iterable", 
+      "esnext",
+      "es2017",
+      "es2018",
+      "es2019",
+      "es2020"
+    ],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    
+    // ✅ FIXED: Enable modern iteration features
+    "downlevelIteration": true,
+    
+    // ✅ Additional useful options
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    
+    // ✅ Modern module resolution
+    "moduleDetection": "force",
+    "allowImportingTsExtensions": false,
+    
+    // ✅ Next.js specific
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@/components/*": ["src/components/*"],
+      "@/lib/*": ["src/lib/*"],
+      "@/modules/*": ["src/modules/*"],
+      "@/types/*": ["src/types/*"],
+      "@/config/*": ["src/config/*"]
+    }
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts", 
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    "src/**/*",
+    "scripts/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    ".next",
+    "out",
+    "dist"
+  ],
+  
+  // ✅ Separate config for build vs development
+  "ts-node": {
+    "compilerOptions": {
+      "module": "commonjs",
+      "target": "es2018"
+    }
+  }
 }

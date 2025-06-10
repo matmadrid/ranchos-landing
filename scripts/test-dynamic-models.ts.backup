@@ -1,0 +1,208 @@
+// scripts/test-dynamic-models.ts
+import { DynamicModelLoader } from '../src/modules/dynamic-models/registry';
+import { LocaleConfig } from '../src/modules/dynamic-models/types/base';
+import { LivestockData } from '../src/modules/dynamic-models/core/financial/LivestockProfitabilityEngine/types';
+
+async function testLivestockProfitabilityEngine() {
+  console.log('🧪 Testing LivestockProfitabilityEngine...\n');
+  
+  try {
+    // Load the model
+    const model = await DynamicModelLoader.loadModel('LPE-001');
+    console.log('✅ Model loaded successfully');
+    console.log(`   ID: ${model.id}`);
+    console.log(`   Name: ${model.name}`);
+    console.log(`   Version: ${model.version}`);
+    console.log(`   Supported Countries: ${model.supportedCountries.join(', ')}\n`);
+    
+    // Test data for each country
+    const testData: LivestockData = {
+      farmId: 'FARM-001',
+      analysisDate: new Date(),
+      periodStartDate: new Date('2024-01-01'),
+      periodEndDate: new Date('2024-12-31'),
+      
+      // Inventory
+      initialInventory: 100,
+      averageWeight: 250, // kg
+      expectedFinalWeight: 450, // kg
+      
+      // Pricing
+      purchasePrice: 5000, // per kg
+      salePrice: 7000, // per kg
+      priceUnit: 'kg',
+      
+      // Feed & Nutrition
+      feedCostPerDay: 50000, // total for all animals
+      feedType: 'Mixed grain and pasture',
+      supplementCost: 5000,
+      
+      // Operational
+      laborCostPerMonth: 2000000,
+      veterinaryCostPerHead: 50000,
+      infrastructureCost: 10000000,
+      transportCost: 5000000,
+      
+      // Financial
+      initialInvestment: 150000000,
+      financingRate: 12,
+      financingPeriod: 12,
+      
+      // Risk Factors
+      mortalityRate: 2.5,
+      morbidityRate: 5,
+      priceVolatility: 15,
+      
+      // Additional
+      breed: 'Angus',
+      productionSystem: 'semi-intensive',
+      certifications: ['Organic', 'Grass-fed']
+    };
+    
+    // Test for each supported country
+    const countries: LocaleConfig[] = [
+      {
+        country: 'CO',
+        currency: 'COP',
+        language: 'es-CO',
+        units: 'metric',
+        dateFormat: 'DD/MM/YYYY',
+        numberFormat: { locale: 'es-CO', options: {} },
+        taxRules: {
+          incomeTax: { rate: 0.35, name: 'Impuesto de Renta' },
+          vatRate: { rate: 0.19, name: 'IVA' },
+          specialTaxes: []
+        },
+        regulations: {
+          taxRates: [],
+          requiredDocuments: [],
+          complianceRules: [],
+          reportingRequirements: []
+        }
+      },
+      {
+        country: 'MX',
+        currency: 'MXN',
+        language: 'es-MX',
+        units: 'metric',
+        dateFormat: 'DD/MM/YYYY',
+        numberFormat: { locale: 'es-MX', options: {} },
+        taxRules: {
+          incomeTax: { rate: 0.30, name: 'ISR' },
+          vatRate: { rate: 0.16, name: 'IVA' },
+          specialTaxes: []
+        },
+        regulations: {
+          taxRates: [],
+          requiredDocuments: [],
+          complianceRules: [],
+          reportingRequirements: []
+        }
+      }
+    ];
+    
+    for (const locale of countries) {
+      console.log(`\n📍 Testing for ${locale.country}...`);
+      
+      // Validate data
+      const validation = model.validate(testData, locale.regulations);
+      console.log(`   Validation: ${validation.isValid ? '✅ Valid' : '❌ Invalid'}`);
+      if (validation.errors.length > 0) {
+        console.log(`   Errors: ${validation.errors.map((e: any) => e.message).join(', ')}`);
+      }
+      if (validation.warnings.length > 0) {
+        console.log(`   Warnings: ${validation.warnings.map((w: any) => w.message).join(', ')}`);
+      }
+      
+      // Process data
+      const result = await model.process(testData, locale);
+      if (result.success && result.data) {
+        console.log(`   ✅ Processing successful`);
+        console.log(`   Net Profit: ${formatCurrency(result.data.netProfit, locale)}`);
+        console.log(`   Profit Margin: ${result.data.profitMargin.toFixed(2)}%`);
+        console.log(`   ROI: ${result.data.roi.toFixed(2)}%`);
+        console.log(`   Break Even: ${result.data.breakEvenPoint.toFixed(0)} units`);
+      } else {
+        console.log(`   ❌ Processing failed`);
+        if (result.errors) {
+          console.log(`   Errors: ${result.errors.map((e: any) => e.message).join(', ')}`);
+        }
+      }
+      
+      // Test export formats
+      console.log(`   Testing exports...`);
+      const formats = ['excel', 'pdf', 'csv', 'json'] as const;
+      for (const format of formats) {
+        try {
+          const exported = model.export(format, locale);
+          console.log(`     ${format.toUpperCase()}: ✅ (${exported.length} bytes)`);
+        } catch (error) {
+          const errorMessage = getErrorMessage(error);
+          console.log(`     ${format.toUpperCase()}: ❌ ${errorMessage}`);
+        }
+      }
+    }
+    
+    // Test UI configurations
+    console.log('\n🖼️  Testing UI Configurations...');
+    const spreadsheetView = model.getSpreadsheetView();
+    console.log(`   Spreadsheet sheets: ${spreadsheetView.sheets.map((s: any) => s.name).join(', ')}`);
+    
+    const dashboardView = model.getDashboardView();
+    console.log(`   Dashboard widgets: ${dashboardView.widgets.length}`);
+    console.log(`   Widget types: ${Array.from(new Set(dashboardView.widgets.map((w: any) => w.type))).join(', ')}`);
+    
+    // Test required fields
+    console.log('\n📋 Required Fields:');
+    const fields = model.getRequiredFields();
+    fields.slice(0, 5).forEach((field: any) => {
+      console.log(`   - ${field.label} (${field.type})`);
+    });
+    console.log(`   ... and ${fields.length - 5} more fields`);
+    
+    // Test calculations
+    console.log('\n🧮 Available Calculations:');
+    const calculations = model.getCalculations();
+    calculations.slice(0, 5).forEach((calc: any) => {
+      console.log(`   - ${calc.name}: ${calc.formula}`);
+    });
+    
+    console.log('\n✅ All tests completed!');
+    
+  } catch (error) {
+    console.error('❌ Test failed:', getErrorMessage(error));
+  }
+}
+
+// Helper function to safely get error message
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  return String(error);
+}
+
+function formatCurrency(value: number, locale: LocaleConfig): string {
+  return new Intl.NumberFormat(locale.language, {
+    style: 'currency',
+    currency: locale.currency,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  }).format(value);
+}
+
+// Run tests
+testLivestockProfitabilityEngine();
+
+// Test model registry
+console.log('\n📚 Testing Model Registry...\n');
+import { DYNAMIC_MODELS_REGISTRY, getModelsByCategory } from '../src/modules/dynamic-models/registry';
+
+console.log(`Total models registered: ${DYNAMIC_MODELS_REGISTRY.length}`);
+console.log('\nModels by category:');
+const categories = ['financial', 'operational', 'strategic', 'human-resources'] as const;
+categories.forEach((category: any) => {
+  const models = getModelsByCategory(category);
+  console.log(`\n${category.toUpperCase()}:`);
+  models.forEach((model: any) => {
+    console.log(`  - ${model.id}: ${model.name}`);
+  });
+});

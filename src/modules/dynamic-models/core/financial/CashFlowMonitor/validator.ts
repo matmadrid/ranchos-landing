@@ -1,0 +1,8 @@
+// CashFlowMonitor/validator.ts
+import { ValidationResult, CountryRegulations } from '../../../types/base';
+
+export class CashFlowMonitorValidator {
+  validate(data: any, regulations: CountryRegulations): ValidationResult {
+    return { valid: true, errors: [], warnings: [] };
+  }
+}

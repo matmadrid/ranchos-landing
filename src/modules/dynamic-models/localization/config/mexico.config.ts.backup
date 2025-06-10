@@ -1,0 +1,173 @@
+// src/modules/dynamic-models/localization/config/mexico.config.ts
+import { LocaleConfig, CountryRegulations } from '../../types/base';
+
+export const MexicoConfig: LocaleConfig = {
+  country: 'MX',
+  currency: 'MXN',
+  language: 'es-MX',
+  units: 'metric',
+  dateFormat: 'DD/MM/YYYY',
+  numberFormat: {
+    locale: 'es-MX',
+    options: {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+      useGrouping: true
+    }
+  },
+  taxRules: {
+    incomeTax: {
+      rate: 0.30,
+      name: 'ISR',
+      code: 'ISR'
+    },
+    vatRate: {
+      rate: 0.16,
+      name: 'IVA',
+      code: 'IVA'
+    },
+    specialTaxes: [
+      {
+        name: 'IEPS',
+        rate: 0.08,
+        code: 'IEPS',
+        description: 'Impuesto Especial sobre Producción y Servicios',
+        applicableFrom: 0
+      }
+    ]
+  },
+  regulations: {
+    taxRates: [
+      { rate: 0.30, name: 'ISR', code: 'ISR' },
+      { rate: 0.16, name: 'IVA', code: 'IVA' }
+    ],
+    requiredDocuments: [
+      {
+        name: 'Registro SINIIGA',
+        code: 'SINIIGA',
+        mandatory: true,
+        renewalPeriod: 365,
+        authority: 'SAGARPA'
+      },
+      {
+        name: 'Certificado Zoosanitario',
+        code: 'SENASICA',
+        mandatory: true,
+        renewalPeriod: 180,
+        authority: 'SENASICA'
+      },
+      {
+        name: 'UPP (Unidad de Producción Pecuaria)',
+        code: 'UPP',
+        mandatory: true,
+        renewalPeriod: 0,
+        authority: 'SAGARPA'
+      }
+    ],
+    complianceRules: [
+      {
+        name: 'Campaña Nacional contra Tuberculosis',
+        code: 'TB-TEST',
+        field: 'healthTests.tuberculosis',
+        validator: (value: any) => value === true,
+        message: 'Prueba de tuberculosis obligatoria',
+        frequency: 365
+      },
+      {
+        name: 'Campaña contra Brucelosis',
+        code: 'BRUCE-TEST',
+        field: 'healthTests.brucelosis',
+        validator: (value: any) => value === true,
+        message: 'Prueba de brucelosis obligatoria',
+        frequency: 365
+      },
+      {
+        name: 'Aretado SINIIGA',
+        code: 'ARETE-SINIIGA',
+        field: 'identification.siniiga',
+        validator: (value: any) => value === true,
+        message: 'Todos los animales deben tener arete SINIIGA'
+      }
+    ],
+    reportingRequirements: [
+      {
+        name: 'Actualización Padrón Ganadero',
+        code: 'PADRON-UPP',
+        frequency: 'annual',
+        authority: 'SAGARPA',
+        deadline: '01-31'
+      },
+      {
+        name: 'Declaración ISR',
+        code: 'SAT-ISR',
+        frequency: 'monthly',
+        authority: 'SAT',
+        deadline: 17
+      }
+    ]
+  }
+};
+
+// Configuración específica para ganadería en México
+export const MexicanCattleConfig = {
+  // Razas más comunes
+  commonBreeds: ['Charolais', 'Angus', 'Hereford', 'Brahman', 'Simmental', 'Limousin', 'Suizo'],
+  
+  // Sistemas de producción
+  productionSystems: {
+    extensive: {
+      name: 'Extensivo',
+      density: 0.8,
+      common: true
+    },
+    semiIntensive: {
+      name: 'Semi-intensivo',
+      density: 2.5,
+      common: true
+    },
+    intensive: {
+      name: 'Intensivo (Corral de Engorda)',
+      density: 100, // animales/hectárea en corral
+      common: true
+    }
+  },
+  
+  // Regiones ganaderas
+  cattleRegions: [
+    { name: 'Sonora', code: 'SON', climate: 'árido' },
+    { name: 'Chihuahua', code: 'CHH', climate: 'templado' },
+    { name: 'Veracruz', code: 'VER', climate: 'tropical' },
+    { name: 'Jalisco', code: 'JAL', climate: 'templado' },
+    { name: 'Tamaulipas', code: 'TAM', climate: 'semi-árido' }
+  ],
+  
+  // Precios de referencia (MXN/kg)
+  referencePrices: {
+    cattlePurchase: {
+      min: 45,
+      max: 65,
+      average: 55
+    },
+    cattleSale: {
+      min: 55,
+      max: 75,
+      average: 65
+    },
+    feedCostPerDay: {
+      min: 25,
+      max: 45,
+      average: 35
+    }
+  },
+  
+  // Métricas típicas
+  typicalMetrics: {
+    mortalityRate: 3.0,
+    dailyWeightGain: 1.2, // Mayor en corrales de engorda
+    feedConversion: 7.5,
+    dressingPercentage: 60,
+    pregnancyRate: 70
+  }
+};
+
+export default MexicoConfig;

@@ -1,0 +1,78 @@
+// src/modules/dynamic-models/localization/adapters/RegulationsAdapter.ts
+import { CountryCode, CountryRegulations } from '../../types/base';
+import ColombiaConfig from '../config/colombia.config';
+import MexicoConfig from '../config/mexico.config';
+import SpainConfig from '../config/spain.config';
+import BrazilConfig from '../config/brazil.config';
+
+export class RegulationsAdapter {
+  private static configs = {
+    'CO': ColombiaConfig,
+    'MX': MexicoConfig,
+    'ES': SpainConfig,
+    'BR': BrazilConfig
+  };
+
+  /**
+   * Get regulations for a specific country
+   */
+  static getRegulations(country: CountryCode): CountryRegulations {
+    const config = this.configs[country];
+    if (!config) {
+      throw new Error(`No regulations found for country: ${country}`);
+    }
+    return {
+      country: country,
+      taxRates: config.regulations?.taxRates || [],
+      requiredDocuments: config.regulations?.requiredDocuments || [],
+      complianceRules: config.regulations?.complianceRules || [],
+      reportingRequirements: config.regulations?.reportingRequirements || [],
+      certificationBodies: config.regulations?.certificationBodies
+    };
+  }
+
+  /**
+   * Check if a document is required in a country
+   */
+  static isDocumentRequired(country: CountryCode, documentCode: string): boolean {
+    const regulations = this.getRegulations(country);
+    return regulations.requiredDocuments.some(
+      doc => doc === documentCode
+    );
+  }
+
+  /**
+   * Get all required documents for a country
+   */
+  static getRequiredDocuments(country: CountryCode) {
+    const regulations = this.getRegulations(country);
+    return regulations.requiredDocuments;
+  }
+
+  /**
+   * Check compliance status
+   */
+  static checkCompliance(
+    data: any,
+    country: CountryCode
+  ): {
+    isCompliant: boolean;
+    violations: Array<{ rule: string; message: string }>;
+    warnings: Array<{ rule: string; message: string }>;
+  } {
+    const regulations = this.getRegulations(country);
+    const violations: Array<{ rule: string; message: string }> = [];
+    const warnings: Array<{ rule: string; message: string }> = [];
+
+    // TODO: Implement proper compliance validation
+    // For now, return a basic response
+
+    return {
+      isCompliant: violations.length === 0,
+      violations,
+      warnings
+    };
+  }
+
+}
+export default RegulationsAdapter;
