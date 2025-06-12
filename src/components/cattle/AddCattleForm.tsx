@@ -1,489 +1,422 @@
+// src/components/cattle/AddCattleForm.tsx
 'use client';
 
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
-import { Calendar, Weight, Heart, Tag } from 'lucide-react';
-
-export interface CattleData {
-  id?: string;
-  tag: string;
-  name?: string;
-  breed: string;
-  sex: 'male' | 'female';
-  birthDate: string;
-  weight?: number;
-  healthStatus: 'excellent' | 'good' | 'fair' | 'poor';
-  location?: string;
-  notes?: string;
-  purchasePrice?: number;
-  purchaseDate?: string;
-  motherId?: string;
-  fatherId?: string;
-}
+import { useRouter } from 'next/navigation';
+import useRanchOSStore from '@/store';
 
 interface AddCattleFormProps {
-  onSubmit: (data: CattleData) => void;
-  onCancel?: () => void;
-  initialData?: Partial<CattleData>;
-  isLoading?: boolean;
-  submitLabel?: string;
-  showOptionalFields?: boolean;
+  onSuccess?: () => void;  // Callback opcional después de guardar
+  hideCancel?: boolean;    // Ocultar botón cancelar
 }
 
-const COMMON_BREEDS = [
-  'Angus',
-  'Hereford', 
-  'Charolais',
-  'Simmental',
-  'Limousin',
-  'Brahman',
-  'Brangus',
-  'Beefmaster',
-  'Gelbvieh',
-  'Red Angus',
-  'Holstein',
-  'Jersey',
-  'Guernsey',
-  'Brown Swiss',
-  'Ayrshire',
-  'Criollo',
-  'Cebu',
-  'Santa Gertrudis',
-  'Otro'
+// Estructura preparada para multi-país
+const BREED_OPTIONS = [
+  // === RAZAS GLOBALES ===
+  { value: 'Angus', label: 'Angus', type: 'beef', popular: ['MX', 'CO', 'BR', 'ES'] },
+  { value: 'Hereford', label: 'Hereford', type: 'beef', popular: ['MX', 'CO', 'BR'] },
+  { value: 'Charolais', label: 'Charolais', type: 'beef', popular: ['MX', 'CO', 'ES'] },
+  { value: 'Simmental', label: 'Simmental', type: 'dual', popular: ['MX', 'CO', 'BR'] },
+  { value: 'Holstein', label: 'Holstein', type: 'dairy', popular: ['MX', 'CO', 'BR', 'ES'] },
+  { value: 'Jersey', label: 'Jersey', type: 'dairy', popular: ['MX', 'CO', 'BR'] },
+  { value: 'Pardo Suizo', label: 'Pardo Suizo', type: 'dual', popular: ['MX', 'CO'] },
+  { value: 'Limousin', label: 'Limousin', type: 'beef', popular: ['MX', 'ES'] },
+  { value: 'Guernsey', label: 'Guernsey', type: 'dairy', popular: ['MX', 'CO'] },
+  { value: 'Ayrshire', label: 'Ayrshire', type: 'dairy', popular: ['MX', 'CO'] },
+  
+  // === RAZAS CEBUINAS (Populares en América Latina) ===
+  { value: 'Brahman', label: 'Brahman', type: 'beef', popular: ['MX', 'CO', 'BR'] },
+  { value: 'Nelore', label: 'Nelore', type: 'beef', popular: ['BR', 'MX', 'CO'] },
+  { value: 'Gyr', label: 'Gyr', type: 'dairy', popular: ['BR', 'MX', 'CO'] },
+  { value: 'Guzerat', label: 'Guzerá/Guzerat', type: 'dual', popular: ['BR', 'MX', 'CO'] },
+  { value: 'Indubrasil', label: 'Indubrasil', type: 'beef', popular: ['BR', 'MX'] },
+  { value: 'Tabapuã', label: 'Tabapuã', type: 'beef', popular: ['BR'] },
+  
+  // === RAZAS MEXICANAS 🇲🇽 ===
+  { value: 'Criollo', label: 'Criollo', type: 'dual', popular: ['MX', 'CO'] },
+  { value: 'Beefmaster', label: 'Beefmaster', type: 'beef', popular: ['MX'] },
+  { value: 'Cebú Mexicano', label: 'Cebú Mexicano', type: 'beef', popular: ['MX'] },
+  
+  // === RAZAS COLOMBIANAS 🇨🇴 ===
+  { value: 'Normando', label: 'Normando', type: 'dual', popular: ['CO'] },
+  { value: 'Romosinuano', label: 'Romosinuano', type: 'beef', popular: ['CO'] },
+  { value: 'Sanmartinero', label: 'Sanmartinero', type: 'beef', popular: ['CO'] },
+  { value: 'Blanco Orejinegro', label: 'Blanco Orejinegro (BON)', type: 'dual', popular: ['CO'] },
+  
+  // === RAZAS BRASILEÑAS 🇧🇷 ===
+  { value: 'Senepol', label: 'Senepol', type: 'beef', popular: ['BR', 'MX'] },
+  { value: 'Canchim', label: 'Canchim', type: 'beef', popular: ['BR'] },
+  { value: 'Pitangueiras', label: 'Pitangueiras', type: 'beef', popular: ['BR'] },
+  
+  // === RAZAS ESPAÑOLAS 🇪🇸 ===
+  { value: 'Avileña', label: 'Avileña-Negra Ibérica', type: 'beef', popular: ['ES'] },
+  { value: 'Asturiana', label: 'Asturiana de los Valles', type: 'beef', popular: ['ES'] },
+  { value: 'Retinta', label: 'Retinta', type: 'beef', popular: ['ES'] },
+  { value: 'Rubia Gallega', label: 'Rubia Gallega', type: 'beef', popular: ['ES'] },
+  { value: 'Limusina', label: 'Limusina', type: 'beef', popular: ['ES'] },
+  { value: 'Charolesa', label: 'Charolesa', type: 'beef', popular: ['ES'] },
+  
+  // === RAZAS AUSTRALIANAS 🇦🇺 (Importadas a México) ===
+  { value: 'Droughtmaster', label: 'Droughtmaster', type: 'beef', popular: ['MX', 'BR'] },
+  { value: 'Murray Grey', label: 'Murray Grey', type: 'beef', popular: ['MX'] },
+  { value: 'Australian Lowline', label: 'Australian Lowline', type: 'beef', popular: ['MX'] },
+  { value: 'Belmont Red', label: 'Belmont Red', type: 'beef', popular: ['MX', 'BR'] },
+  { value: 'Illawarra', label: 'Illawarra', type: 'dairy', popular: ['MX'] },
+  { value: 'Australian Braford', label: 'Australian Braford', type: 'beef', popular: ['MX', 'BR'] },
+  { value: 'Santa Gertrudis', label: 'Santa Gertrudis', type: 'beef', popular: ['MX', 'BR'] },
+  
+  // === CRUCES POPULARES ===
+  { value: 'Brangus', label: 'Brangus (Brahman x Angus)', type: 'beef', popular: ['MX', 'CO', 'BR'] },
+  { value: 'Braford', label: 'Braford (Brahman x Hereford)', type: 'beef', popular: ['BR', 'MX'] },
+  { value: 'Simbrah', label: 'Simbrah (Simmental x Brahman)', type: 'beef', popular: ['MX', 'CO'] },
+  { value: 'F1 Lechero', label: 'F1 Lechero', type: 'dairy', popular: ['MX', 'CO'] },
+  { value: 'Suizo x Cebú', label: 'Suizo x Cebú', type: 'dual', popular: ['MX', 'CO'] },
+  { value: 'Holstein x Cebú', label: 'Holstein x Cebú', type: 'dairy', popular: ['MX', 'CO', 'BR'] },
+  
+  // === OPCIÓN GENERAL ===
+  { value: 'Otra', label: 'Otra', type: 'other', popular: ['ALL'] }
 ];
 
-const AddCattleForm: React.FC<AddCattleFormProps> = ({
-  onSubmit,
-  onCancel,
-  initialData = {},
-  isLoading = false,
-  submitLabel = 'Agregar Animal',
-  showOptionalFields = true
-}) => {
-  const [formData, setFormData] = useState<CattleData>({
+// FUTURO: Función para filtrar por país
+export const getBreedsByCountry = (countryCode: string): typeof BREED_OPTIONS => {
+  if (countryCode === 'ALL') return BREED_OPTIONS;
+  
+  return BREED_OPTIONS.filter(breed => 
+    breed.popular.includes(countryCode) || breed.popular.includes('ALL')
+  );
+};
+
+// FUTURO: Configuración de país (preparación)
+interface CountryConfig {
+  code: string;
+  name: string;
+  currency: string;
+  defaultBreeds?: string[];
+  regulations?: {
+    traceability: string;
+    sanitary: string;
+  };
+}
+
+// Preparación para futura expansión
+const COUNTRY_CONFIGS: Record<string, CountryConfig> = {
+  MX: {
+    code: 'MX',
+    name: 'México',
+    currency: 'MXN',
+    regulations: {
+      traceability: 'SINIIGA',
+      sanitary: 'SENASICA'
+    }
+  },
+  CO: {
+    code: 'CO',
+    name: 'Colombia',
+    currency: 'COP',
+    regulations: {
+      traceability: 'SINIGAN',
+      sanitary: 'ICA'
+    }
+  },
+  BR: {
+    code: 'BR',
+    name: 'Brasil',
+    currency: 'BRL',
+    regulations: {
+      traceability: 'SISBOV',
+      sanitary: 'MAPA'
+    }
+  },
+  ES: {
+    code: 'ES',
+    name: 'España',
+    currency: 'EUR',
+    regulations: {
+      traceability: 'SITRAN',
+      sanitary: 'MAPA'
+    }
+  }
+};
+
+export default function AddCattleForm({ onSuccess, hideCancel = false }: AddCattleFormProps) {
+  const router = useRouter();
+  const addCattle = useRanchOSStore((state) => state.addCattle);
+  const activeRanchId = useRanchOSStore((state) => state.activeRanchId);
+  const activeRanch = useRanchOSStore((state) => state.getActiveRanch());
+  
+  const [formData, setFormData] = useState({
     tag: '',
     name: '',
     breed: '',
-    sex: 'female',
+    sex: 'female' as 'male' | 'female',
     birthDate: '',
-    weight: undefined,
-    healthStatus: 'good',
+    weight: '',
+    healthStatus: 'good' as 'excellent' | 'good' | 'fair' | 'poor',
     location: '',
-    notes: '',
-    purchasePrice: undefined,
-    purchaseDate: '',
-    motherId: '',
-    fatherId: '',
-    ...initialData
+    motherTag: '',
+    fatherTag: '',
+    notes: ''
   });
 
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [showAdvanced, setShowAdvanced] = useState(false);
-
-  const validateForm = (): boolean => {
-    const newErrors: Record<string, string> = {};
-
-    // Required fields validation
-    if (!formData.tag.trim()) {
-      newErrors.tag = 'El número de arete es obligatorio';
-    }
-
-    if (!formData.breed) {
-      newErrors.breed = 'La raza es obligatoria';
-    }
-
-    if (!formData.birthDate) {
-      newErrors.birthDate = 'La fecha de nacimiento es obligatoria';
-    } else {
-      const birthDate = new Date(formData.birthDate);
-      const today = new Date();
-      if (birthDate > today) {
-        newErrors.birthDate = 'La fecha de nacimiento no puede ser futura';
-      }
-    }
-
-    // Weight validation
-    if (formData.weight && (formData.weight <= 0 || formData.weight > 2000)) {
-      newErrors.weight = 'El peso debe estar entre 1 y 2000 kg';
-    }
-
-    // Purchase price validation
-    if (formData.purchasePrice && formData.purchasePrice < 0) {
-      newErrors.purchasePrice = 'El precio de compra no puede ser negativo';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+  // Si no hay rancho activo, mostrar mensaje
+  if (!activeRanchId || !activeRanch) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-gray-600 mb-4">
+          Primero debes crear o seleccionar un rancho
+        </p>
+        <button
+          onClick={() => router.push('/profile')}
+          className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+        >
+          Ir a Configuración
+        </button>
+      </div>
+    );
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (validateForm()) {
-      // Clean up undefined values
-      const cleanedData = Object.fromEntries(
-        Object.entries(formData).filter(([_, value]) => value !== undefined && value !== '')
-      ) as CattleData;
+    // Agregar el animal al rancho activo
+    addCattle({
+      ...formData,
+      weight: formData.weight ? parseFloat(formData.weight) : undefined,
+      ranchId: activeRanchId // Asociar con el rancho activo
+    });
 
-      onSubmit(cleanedData);
-    }
-  };
+    // Limpiar formulario
+    setFormData({
+      tag: '',
+      name: '',
+      breed: '',
+      sex: 'female',
+      birthDate: '',
+      weight: '',
+      healthStatus: 'good',
+      location: '',
+      motherTag: '',
+      fatherTag: '',
+      notes: ''
+    });
 
-const handleInputChange = (field: keyof CattleData, value: string | number | undefined) => {    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-
-    // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors(prev => ({
-        ...prev,
-        [field]: ''
-      }));
-    }
-  };
-
-  const calculateAge = (birthDate: string): string => {
-    if (!birthDate) return '';
-    
-    const birth = new Date(birthDate);
-    const today = new Date();
-    const diffTime = Math.abs(today.getTime() - birth.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    if (diffDays < 30) {
-      return `${diffDays} días`;
-    } else if (diffDays < 365) {
-      const months = Math.floor(diffDays / 30);
-      return `${months} ${months === 1 ? 'mes' : 'meses'}`;
+    // Si hay callback onSuccess, usarlo. Si no, ir al dashboard
+    if (onSuccess) {
+      onSuccess();
     } else {
-      const years = Math.floor(diffDays / 365);
-      const remainingMonths = Math.floor((diffDays % 365) / 30);
-      return `${years} ${years === 1 ? 'año' : 'años'}${remainingMonths > 0 ? ` ${remainingMonths} meses` : ''}`;
+      router.push('/dashboard');
     }
+  };
+
+  // Función para obtener el indicador de país de una raza
+  const getCountryIndicator = (breed: typeof BREED_OPTIONS[0]) => {
+    const indicators: string[] = [];
+    if (breed.popular.includes('MX')) indicators.push('🇲🇽');
+    if (breed.popular.includes('CO')) indicators.push('🇨🇴');
+    if (breed.popular.includes('BR')) indicators.push('🇧🇷');
+    if (breed.popular.includes('ES')) indicators.push('🇪🇸');
+    return indicators.length > 0 ? ` ${indicators.join(' ')}` : '';
   };
 
   return (
-    <Card className="w-full max-w-2xl mx-auto">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Tag className="h-5 w-5" />
-          {submitLabel}
-        </CardTitle>
-        <CardDescription>
-          Complete la información básica del animal. Los campos marcados con * son obligatorios.
-        </CardDescription>
-      </CardHeader>
-      
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Basic Information */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Tag Number */}
-            <div>
-              <Label htmlFor="tag" className="text-sm font-medium">
-                Número de Arete *
-              </Label>
-              <Input
-                id="tag"
-                value={formData.tag}
-                onChange={(e) => handleInputChange('tag', e.target.value)}
-                placeholder="Ej: 001, A-123"
-                className={errors.tag ? 'border-red-500' : ''}
-              />
-              {errors.tag && (
-                <p className="text-sm text-red-500 mt-1">{errors.tag}</p>
-              )}
-            </div>
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Indicador del rancho activo */}
+      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+        <p className="text-sm text-green-800">
+          Agregando animal a: <span className="font-semibold">{activeRanch.name}</span>
+        </p>
+      </div>
 
-            {/* Name */}
-            <div>
-              <Label htmlFor="name" className="text-sm font-medium">
-                Nombre (Opcional)
-              </Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => handleInputChange('name', e.target.value)}
-                placeholder="Ej: Estrella, Toro Negro"
-              />
-            </div>
-          </div>
-
-          {/* Breed and Sex */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Breed */}
-            <div>
-              <Label htmlFor="breed" className="text-sm font-medium">
-                Raza *
-              </Label>
-              <Select
-                value={formData.breed}
-                onValueChange={(value) => handleInputChange('breed', value)}
-              >
-                <SelectTrigger className={errors.breed ? 'border-red-500' : ''}>
-                  <SelectValue placeholder="Seleccione la raza" />
-                </SelectTrigger>
-                <SelectContent>
-                  {COMMON_BREEDS.map(breed => (
-                    <SelectItem key={breed} value={breed}>
-                      {breed}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.breed && (
-                <p className="text-sm text-red-500 mt-1">{errors.breed}</p>
-              )}
-            </div>
-
-            {/* Sex */}
-            <div>
-              <Label htmlFor="sex" className="text-sm font-medium">
-                Sexo *
-              </Label>
-              <Select
-                value={formData.sex}
-                onValueChange={(value: 'male' | 'female') => handleInputChange('sex', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="female">Hembra</SelectItem>
-                  <SelectItem value="male">Macho</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Birth Date and Weight */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Birth Date */}
-            <div>
-              <Label htmlFor="birthDate" className="text-sm font-medium">
-                Fecha de Nacimiento *
-              </Label>
-              <div className="relative">
-                <Input
-                  id="birthDate"
-                  type="date"
-                  value={formData.birthDate}
-                  onChange={(e) => handleInputChange('birthDate', e.target.value)}
-                  className={errors.birthDate ? 'border-red-500' : ''}
-                />
-                <Calendar className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
-              </div>
-              {formData.birthDate && (
-                <p className="text-sm text-gray-600 mt-1">
-                  Edad: {calculateAge(formData.birthDate)}
-                </p>
-              )}
-              {errors.birthDate && (
-                <p className="text-sm text-red-500 mt-1">{errors.birthDate}</p>
-              )}
-            </div>
-
-            {/* Weight */}
-            <div>
-              <Label htmlFor="weight" className="text-sm font-medium">
-                Peso Actual (kg)
-              </Label>
-              <div className="relative">
-                <Input
-                  id="weight"
-                  type="number"
-                  value={formData.weight || ''}
-                  onChange={(e) => handleInputChange('weight', parseFloat(e.target.value) || undefined)}
-                  placeholder="Ej: 250"
-                  min="1"
-                  max="2000"
-                  className={errors.weight ? 'border-red-500' : ''}
-                />
-                <Weight className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
-              </div>
-              {errors.weight && (
-                <p className="text-sm text-red-500 mt-1">{errors.weight}</p>
-              )}
-            </div>
-          </div>
-
-          {/* Health Status */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Información Básica */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium text-gray-900">Información Básica</h3>
+          
           <div>
-            <Label htmlFor="healthStatus" className="text-sm font-medium">
-              Estado de Salud
-            </Label>
-            <Select
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Número de Identificación *
+            </label>
+            <input
+              type="text"
+              required
+              value={formData.tag}
+              onChange={(e) => setFormData({ ...formData, tag: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+              placeholder="Ej: A001"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Nombre (opcional)
+            </label>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+              placeholder="Ej: Bessie"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Raza *
+            </label>
+            <select
+              required
+              value={formData.breed}
+              onChange={(e) => setFormData({ ...formData, breed: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+            >
+              <option value="">Selecciona una raza</option>
+              {BREED_OPTIONS.map((breed) => (
+                <option key={breed.value} value={breed.value}>
+                  {breed.label}{getCountryIndicator(breed)}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Sexo *
+            </label>
+            <select
+              value={formData.sex}
+              onChange={(e) => setFormData({ ...formData, sex: e.target.value as 'male' | 'female' })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+            >
+              <option value="female">Hembra</option>
+              <option value="male">Macho</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Detalles Adicionales */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium text-gray-900">Detalles Adicionales</h3>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Fecha de Nacimiento *
+            </label>
+            <input
+              type="date"
+              required
+              value={formData.birthDate}
+              onChange={(e) => setFormData({ ...formData, birthDate: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Peso (kg)
+            </label>
+            <input
+              type="number"
+              value={formData.weight}
+              onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+              placeholder="Ej: 450"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Estado de Salud *
+            </label>
+            <select
               value={formData.healthStatus}
-              onValueChange={(value: 'excellent' | 'good' | 'fair' | 'poor') => 
-                handleInputChange('healthStatus', value)
-              }
+              onChange={(e) => setFormData({ ...formData, healthStatus: e.target.value as any })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
             >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="excellent">
-                  <div className="flex items-center gap-2">
-                    <Badge variant="default" className="bg-green-500">Excelente</Badge>
-                  </div>
-                </SelectItem>
-                <SelectItem value="good">
-                  <div className="flex items-center gap-2">
-                    <Badge variant="default" className="bg-blue-500">Bueno</Badge>
-                  </div>
-                </SelectItem>
-                <SelectItem value="fair">
-                  <div className="flex items-center gap-2">
-                    <Badge variant="default" className="bg-yellow-500">Regular</Badge>
-                  </div>
-                </SelectItem>
-                <SelectItem value="poor">
-                  <div className="flex items-center gap-2">
-                    <Badge variant="destructive">Malo</Badge>
-                  </div>
-                </SelectItem>
-              </SelectContent>
-            </Select>
+              <option value="excellent">Excelente</option>
+              <option value="good">Buena</option>
+              <option value="fair">Regular</option>
+              <option value="poor">Mala</option>
+            </select>
           </div>
 
-          {/* Advanced Fields Toggle */}
-          {showOptionalFields && (
-            <div>
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setShowAdvanced(!showAdvanced)}
-                className="p-0 h-auto text-sm text-blue-600 hover:text-blue-800"
-              >
-                {showAdvanced ? 'Ocultar' : 'Mostrar'} campos adicionales
-              </Button>
-            </div>
-          )}
-
-          {/* Advanced Fields */}
-          {showAdvanced && showOptionalFields && (
-            <div className="space-y-4 border-t pt-4">
-              {/* Location and Purchase Price */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="location" className="text-sm font-medium">
-                    Ubicación/Potrero
-                  </Label>
-                  <Input
-                    id="location"
-                    value={formData.location}
-                    onChange={(e) => handleInputChange('location', e.target.value)}
-                    placeholder="Ej: Potrero Norte, Establo A"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="purchasePrice" className="text-sm font-medium">
-                    Precio de Compra
-                  </Label>
-                  <Input
-                    id="purchasePrice"
-                    type="number"
-                    value={formData.purchasePrice || ''}
-                    onChange={(e) => handleInputChange('purchasePrice', parseFloat(e.target.value) || undefined)}
-                    placeholder="Ej: 15000"
-                    min="0"
-                    className={errors.purchasePrice ? 'border-red-500' : ''}
-                  />
-                  {errors.purchasePrice && (
-                    <p className="text-sm text-red-500 mt-1">{errors.purchasePrice}</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Purchase Date */}
-              <div>
-                <Label htmlFor="purchaseDate" className="text-sm font-medium">
-                  Fecha de Compra
-                </Label>
-                <Input
-                  id="purchaseDate"
-                  type="date"
-                  value={formData.purchaseDate}
-                  onChange={(e) => handleInputChange('purchaseDate', e.target.value)}
-                />
-              </div>
-
-              {/* Parent IDs */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="motherId" className="text-sm font-medium">
-                    ID de la Madre
-                  </Label>
-                  <Input
-                    id="motherId"
-                    value={formData.motherId}
-                    onChange={(e) => handleInputChange('motherId', e.target.value)}
-                    placeholder="Ej: 001, M-123"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="fatherId" className="text-sm font-medium">
-                    ID del Padre
-                  </Label>
-                  <Input
-                    id="fatherId"
-                    value={formData.fatherId}
-                    onChange={(e) => handleInputChange('fatherId', e.target.value)}
-                    placeholder="Ej: 002, T-456"
-                  />
-                </div>
-              </div>
-
-              {/* Notes */}
-              <div>
-                <Label htmlFor="notes" className="text-sm font-medium">
-                  Notas Adicionales
-                </Label>
-                <Textarea
-                  id="notes"
-                  value={formData.notes}
-                  onChange={(e) => handleInputChange('notes', e.target.value)}
-                  placeholder="Observaciones, características especiales, historial médico..."
-                  rows={3}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Form Actions */}
-          <div className="flex gap-3 pt-4">
-            {onCancel && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onCancel}
-                disabled={isLoading}
-                className="flex-1"
-              >
-                Cancelar
-              </Button>
-            )}
-            <Button
-              type="submit"
-              disabled={isLoading}
-              className="flex-1"
-            >
-              {isLoading ? 'Guardando...' : submitLabel}
-            </Button>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Ubicación en el Rancho
+            </label>
+            <input
+              type="text"
+              value={formData.location}
+              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+              placeholder="Ej: Corral A"
+            />
           </div>
-        </form>
-      </CardContent>
-    </Card>
+        </div>
+      </div>
+
+      {/* Genealogía */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-medium text-gray-900">Genealogía</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Número de la Madre
+            </label>
+            <input
+              type="text"
+              value={formData.motherTag}
+              onChange={(e) => setFormData({ ...formData, motherTag: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+              placeholder="Ej: B023"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Número del Padre
+            </label>
+            <input
+              type="text"
+              value={formData.fatherTag}
+              onChange={(e) => setFormData({ ...formData, fatherTag: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+              placeholder="Ej: C015"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Notas */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Notas Adicionales
+        </label>
+        <textarea
+          value={formData.notes}
+          onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+          rows={3}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+          placeholder="Cualquier información adicional..."
+        />
+      </div>
+
+      {/* Botones */}
+      <div className="flex justify-end gap-4">
+        {!hideCancel && (
+          <button
+            type="button"
+            onClick={() => router.push('/dashboard')}
+            className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+          >
+            Cancelar
+          </button>
+        )}
+        <button
+          type="submit"
+          className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+        >
+          Agregar Animal
+        </button>
+      </div>
+    </form>
   );
-};
-
-export default AddCattleForm;
+}

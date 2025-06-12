@@ -1,5 +1,4 @@
 // src/components/auth/Onboarding.tsx
-
 'use client';
 
 import { useState } from 'react';
@@ -23,7 +22,16 @@ interface RanchFormData {
 
 export default function Onboarding() {
   const [currentStep, setCurrentStep] = useState<OnboardingStep>('welcome');
-  const { setCurrentRanch, setIsOnboardingComplete, setCurrentUser, currentUser } = useStore();
+  const { 
+    setCurrentRanch, 
+    setIsOnboardingComplete, 
+    setCurrentUser, 
+    currentUser, 
+    currentRanch,
+    ranches,
+    addRanch,
+    setActiveRanch
+  } = useStore();
   
   const {
     register,
@@ -46,33 +54,32 @@ export default function Onboarding() {
     if (!currentUser) {
       const tempUser = {
         id: Math.random().toString(36).substr(2, 9),
-        email: 'temporal@ranchos.com', // Esto se actualizará en el perfil
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        name: '',
+        email: 'temporal@ranchos.com',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       };
       setCurrentUser(tempUser);
     }
 
-    // Crear el rancho
+    // Usar la función addRanch del store actualizado
     const newRanch = {
-      id: Math.random().toString(36).substr(2, 9),
-      ...data,
-      userId: currentUser?.id || 'temp-user',
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      name: data.name,
+      location: data.location,
+      size: data.size,
+      type: 'mixed' as 'dairy' | 'beef' | 'mixed',
+      isActive: true
     };
     
-    setCurrentRanch(newRanch);
+    // Agregar el rancho usando la función del store
+    addRanch(newRanch);
+    
+    // El store automáticamente lo establece como activo si es el primero
+    // Avanzar al siguiente paso
     setCurrentStep('firstCattle');
   };
 
-  const handleCattleSuccess = () => {
-    setCurrentStep('complete');
-  };
-
   const completeOnboarding = () => {
-    setIsOnboardingComplete(true);
-    // Redirigir al dashboard
     window.location.href = '/dashboard';
   };
 
@@ -175,7 +182,7 @@ export default function Onboarding() {
                   </Label>
                   <Input
                     id="name"
-                    placeholder="Ej: Rancho La Chingada"
+                    placeholder="Ej: Rancho Los Álamos"
                     {...register('name', { required: 'El nombre es requerido' })}
                   />
                   {errors.name && (
@@ -191,7 +198,7 @@ export default function Onboarding() {
                     <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                     <Input
                       id="location"
-                      placeholder="Ej: Jalisco, México"
+                      placeholder="Ej: Mexicali, Baja California"
                       className="pl-10"
                       {...register('location', { required: 'La ubicación es requerida' })}
                     />
@@ -232,33 +239,35 @@ export default function Onboarding() {
         {/* First Cattle Step */}
         {currentStep === 'firstCattle' && (
           <div className="space-y-6">
-            <div className="text-center">
+            <div className="text-center mb-6">
               <h2 className="text-2xl font-bold">Registra tu primer animal</h2>
               <p className="text-gray-600 mt-2">
                 Puedes agregar más animales después desde el dashboard
               </p>
             </div>
-            {/* Aquí iría AddCattleForm pero lo comentamos por ahora */}
-            <Card>
-              <CardContent className="pt-6">
-                <p className="text-center text-gray-600 mb-4">
-                  Formulario de registro de ganado (próximamente)
-                </p>
-                <Button
-                  onClick={handleCattleSuccess}
-                  className="w-full"
-                >
-                  Continuar sin registrar
-                </Button>
-              </CardContent>
-            </Card>
-            <Button
-              variant="ghost"
-              onClick={() => setCurrentStep('complete')}
-              className="w-full"
-            >
-              Omitir por ahora
-            </Button>
+            
+            {/* AddCattleForm con callback personalizado */}
+            <AddCattleForm 
+              onSuccess={() => {
+                setCurrentStep('complete');
+                setIsOnboardingComplete(true);
+              }}
+              hideCancel={true}
+            />
+            
+            {/* Opción para omitir */}
+            <div className="text-center pt-4 border-t">
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setCurrentStep('complete');
+                  setIsOnboardingComplete(true);
+                }}
+                className="text-gray-600"
+              >
+                Omitir por ahora
+              </Button>
+            </div>
           </div>
         )}
 
@@ -277,7 +286,6 @@ export default function Onboarding() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Opción para completar perfil */}
               <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                 <h3 className="font-medium text-blue-900 mb-2">
                   🎯 Siguiente paso recomendado
@@ -289,7 +297,6 @@ export default function Onboarding() {
                   variant="outline"
                   className="w-full border-blue-300 text-blue-700 hover:bg-blue-100"
                   onClick={() => {
-                    // Guardar estado y redirigir a perfil
                     localStorage.setItem('onboardingComplete', 'true');
                     window.location.href = '/profile';
                   }}
@@ -301,6 +308,7 @@ export default function Onboarding() {
               <Button
                 onClick={completeOnboarding}
                 className="w-full"
+                size="lg"
               >
                 Ir al Dashboard
               </Button>

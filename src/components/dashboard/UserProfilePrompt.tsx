@@ -1,9 +1,8 @@
-// src/components/dashboard/UserProfilePrompt.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { X, User, Gift, Sparkles } from 'lucide-react';
+import { X, User, Gift, Sparkles, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface UserProfilePromptProps {
@@ -67,9 +66,9 @@ export const UserProfilePrompt = ({ onDismiss, onComplete }: UserProfilePromptPr
           </motion.div>
           
           {/* Contenido */}
-          <h3 className="font-semibold text-gray-900 mb-2">
+          <h3 className="font-semibold text-gray-900 mb-2 flex items-center">
             ¡Completa tu perfil! 
-            <Sparkles className="inline-block h-4 w-4 ml-1 text-yellow-500" />
+            <Sparkles className="h-4 w-4 ml-1 text-yellow-500" />
           </h3>
           
           <p className="text-sm text-gray-600 mb-4">
@@ -112,9 +111,10 @@ export const UserProfilePrompt = ({ onDismiss, onComplete }: UserProfilePromptPr
           </div>
           
           {/* Indicador de tiempo */}
-          <p className="text-xs text-gray-400 text-center mt-3">
-            Solo toma 2 minutos ⏱️
-          </p>
+          <div className="flex items-center justify-center text-xs text-gray-400 mt-3">
+            <Clock className="h-3 w-3 mr-1" />
+            Solo toma 2 minutos
+          </div>
         </motion.div>
       )}
     </AnimatePresence>

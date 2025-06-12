@@ -1,4 +1,14 @@
 {
+  "/_not-found": "app/_not-found.js",
+  "/analytics/page": "app/analytics/page.js",
+  "/animals/[id]/page": "app/animals/[id]/page.js",
+  "/auth/onboarding/page": "app/auth/onboarding/page.js",
+  "/api/ranches/route": "app/api/ranches/route.js",
+  "/auth/register/page": "app/auth/register/page.js",
+  "/dashboard/page": "app/dashboard/page.js",
   "/page": "app/page.js",
-  "/auth/onboarding/page": "app/auth/onboarding/page.js"
+  "/auth/login/page": "app/auth/login/page.js",
+  "/test-premium/page": "app/test-premium/page.js",
+  "/test-motion/page": "app/test-motion/page.js",
+  "/profile/page": "app/profile/page.js"
 }
