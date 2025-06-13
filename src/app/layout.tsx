@@ -13,7 +13,19 @@ export const metadata: Metadata = {
   description: 'Plataforma inteligente para administrar tu rancho con tecnología de punta',
   keywords: 'ganadería, rancho, gestión, ganado, México, administración',
   authors: [{ name: 'TorresLaveaga' }],
-  openGraph: {
+  icons: {
+    icon: '/icon.svg',
+    apple: '/apple-icon.png',
+    other: [
+      {
+        rel: 'icon',
+        sizes: '32x32',
+        url: '/icon.svg',
+      },
+    ],
+  },
+openGraph: {
+
     title: 'RanchOS - Gestión Ganadera Inteligente',
     description: 'Moderniza tu rancho con nuestra plataforma inteligente',
     type: 'website',

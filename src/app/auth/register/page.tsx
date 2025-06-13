@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { 
   Mail, 
@@ -24,15 +24,28 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { LogoSatellite } from '@/components/ui/logo-static';
 import useRanchOSStore from '@/store';
 import { useToast } from '@/hooks/useToast';
+import { CompleteProfileMessage } from '@/components/auth/CompleteProfileMessage';
 
 export default function RegisterPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const message = searchParams.get('message');
+  const redirectTo = searchParams.get('redirect') || '/dashboard';
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
-  const { setCurrentUser, setProfile, currentUser, ranches, setIsOnboardingComplete } = useRanchOSStore();
+  const { setCurrentUser, setProfile, currentUser, ranches, setIsOnboardingComplete, currentRanch, cattle } = useRanchOSStore();
   const { success, error } = useToast();
+  
+  // Detectar si es usuario temporal completando perfil
+  const isTemporaryUser = currentUser?.id?.startsWith('demo-');
+  const isCompletingProfile = message === 'complete-profile' && isTemporaryUser;
+  
+  // Obtener datos del rancho temporal
+  const temporaryRanchData = currentRanch || ranches[0];
+  const temporaryAnimalsCount = cattle?.length || 0;
+  const temporaryProduction = 0;
   
   // Definir emojis flotantes con posiciones determinísticas
   const floatingEmojis = [
@@ -169,9 +182,8 @@ export default function RegisterPage() {
 
       success("Welcome to RanchOS! 🎉", "Your account has been created successfully");
 
-      // Si viene del prompt del dashboard, volver al dashboard
-      // Si no, ir al dashboard
-      router.push('/dashboard');
+      // Redirigir según el parámetro o al dashboard por defecto
+      router.push(redirectTo);
     }, 1500);
   };
 
@@ -216,34 +228,6 @@ export default function RegisterPage() {
         {/* Animated grid pattern */}
         <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-20" />
         
-        {/* Floating elements */}
-        <div className="absolute inset-0 overflow-hidden">
-          {[...Array(8)].map((_, i) => (
-            <motion.div
-              key={i}
-              className="absolute"
-              initial={{
-                x: `${Math.random() * 100}%`,
-                y: `${Math.random() * 100}%`,
-              }}
-              animate={{
-                x: [`${Math.random() * 100}%`, `${Math.random() * 100}%`],
-                y: [`${Math.random() * 100}%`, `${Math.random() * 100}%`],
-              }}
-              transition={{
-                duration: Math.random() * 20 + 20,
-                repeat: Infinity,
-                repeatType: 'reverse',
-                ease: 'easeInOut',
-              }}
-            >
-              <div className="text-6xl opacity-30">
-                {["🐄", "🌾", "📊", "🚜", "🌱", "🛰️", "📈", "🌿"][i]}
-              </div>
-            </motion.div>
-          ))}
-        </div>
-
         {/* Content overlay */}
         <div className="absolute inset-0 flex items-center justify-center p-12">
           <div className="text-center text-white max-w-lg">
@@ -253,7 +237,7 @@ export default function RegisterPage() {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.3 }}
             >
-              Join 10,000+ modern ranchers
+              {isCompletingProfile ? "Convierte tu progreso en permanente" : "Únete a miles de ganaderos modernos"}
             </motion.h2>
             <motion.p 
               className="text-xl opacity-90 mb-8"
@@ -261,7 +245,7 @@ export default function RegisterPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
             >
-              Transform your ranch operations with cutting-edge technology
+              {isCompletingProfile ? "Mantén todos tus datos y desbloquea funciones avanzadas" : "Transforma tu rancho con tecnología de punta"}
             </motion.p>
             
             {/* Stats */}
@@ -272,7 +256,7 @@ export default function RegisterPage() {
               transition={{ delay: 0.5 }}
             >
               {[
-                { number: '50K+', label: 'Animals tracked' },
+                { number: '50+', label: 'Animals tracked' },
                 { number: '98%', label: 'Satisfaction rate' },
                 { number: '24/7', label: 'Support' }
               ].map((stat, index) => (
@@ -301,6 +285,21 @@ export default function RegisterPage() {
           className="w-full max-w-md space-y-8"
         >
           {/* Logo and Header */}
+          {/* Mensaje contextual para usuarios temporales */}
+          {isCompletingProfile && (
+            <div className="mb-6">
+              <CompleteProfileMessage
+                ranchName={temporaryRanchData?.name}
+                animalCount={temporaryAnimalsCount}
+                productionData={{
+                  totalProduction: temporaryProduction,
+                  trend: 'up'
+                }}
+              />
+            </div>
+          )}
+
+          
           <div className="text-center">
             <motion.div 
               className="flex justify-center mb-8"
@@ -315,7 +314,7 @@ export default function RegisterPage() {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.1 }}
             >
-              Create your account
+              {isCompletingProfile ? 'Completa tu cuenta' : 'Crea tu cuenta'}
             </motion.h1>
             <motion.p 
               className="mt-2 text-gray-600"
@@ -323,7 +322,7 @@ export default function RegisterPage() {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.2 }}
             >
-              Start your 14-day free trial
+              {isCompletingProfile ? 'Último paso para asegurar tu información' : 'Únete gratis a la plataforma ganadera más moderna'}
             </motion.p>
           </div>
 
@@ -564,7 +563,7 @@ export default function RegisterPage() {
                       </motion.div>
                     ) : (
                       <>
-                        Create account
+                        {isCompletingProfile ? 'Completar registro' : 'Crear cuenta gratis'}
                         <ArrowRight className="ml-2 h-4 w-4" />
                       </>
                     )}
@@ -590,7 +589,7 @@ export default function RegisterPage() {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4 }}
           >
-            Already have an account?{' '}
+            {isCompletingProfile ? '¿Prefieres seguir explorando?' : '¿Ya tienes cuenta?'}{' '}
             <Link href="/auth/login" className="font-medium text-blue-600 hover:text-blue-700">
               Sign in
             </Link>

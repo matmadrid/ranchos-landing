@@ -131,7 +131,7 @@ export default function EditAnimalModal({ animal, isOpen, onClose }: EditAnimalM
         <Card className="border-0 shadow-none">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
             <div>
-              <CardTitle>Editar Animal</CardTitle>
+              <CardTitle>Editar animal</CardTitle>
               <CardDescription>
                 Modifica los datos de {animal.name || animal.tag}
               </CardDescription>

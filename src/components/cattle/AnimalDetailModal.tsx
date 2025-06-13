@@ -1,0 +1,580 @@
+// src/components/cattle/AnimalDetailModal.tsx
+'use client';
+
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { 
+  X, 
+  Edit, 
+  Calendar, 
+  Weight, 
+  Heart, 
+  Activity,
+  AlertTriangle,
+  Droplets,
+  TrendingUp,
+  Clock,
+  Star,
+  Package,
+  Stethoscope,
+  BarChart3,
+  FileText,
+  Milk
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import type { Animal } from '@/types';
+import useRanchOSStore from '@/store';
+import ProductionChart from '@/components/analytics/ProductionChart';
+
+interface AnimalDetailModalProps {
+  animal: Animal;
+  isOpen: boolean;
+  onClose: () => void;
+  onEditAnimal: (animal: Animal) => void;
+  onRegisterProduction: (animal: Animal) => void;
+}
+
+export default function AnimalDetailModal({ 
+  animal, 
+  isOpen, 
+  onClose, 
+  onEditAnimal,
+  onRegisterProduction 
+}: AnimalDetailModalProps) {
+  const { milkProductions } = useRanchOSStore();
+  const [activeTab, setActiveTab] = useState('info');
+  
+  if (!isOpen) return null;
+
+  // Funciones auxiliares
+  const getAgeInMonths = () => {
+    if (!animal.birthDate) return 'Desconocida';
+    const birthDate = new Date(animal.birthDate);
+    const today = new Date();
+    const months = (today.getFullYear() - birthDate.getFullYear()) * 12 + 
+                   (today.getMonth() - birthDate.getMonth());
+    
+    if (months < 12) {
+      return `${months} ${months === 1 ? 'mes' : 'meses'}`;
+    } else {
+      const years = Math.floor(months / 12);
+      const remainingMonths = months % 12;
+      return `${years} ${years === 1 ? 'año' : 'años'}${remainingMonths > 0 ? ` y ${remainingMonths} ${remainingMonths === 1 ? 'mes' : 'meses'}` : ''}`;
+    }
+  };
+
+  const getHealthColor = (status?: string) => {
+    switch(status) {
+      case 'excellent': return 'from-green-400 to-emerald-600';
+      case 'good': return 'from-blue-400 to-indigo-600';
+      case 'fair': return 'from-yellow-400 to-orange-600';
+      case 'poor': return 'from-red-400 to-pink-600';
+      default: return 'from-gray-400 to-gray-600';
+    }
+  };
+
+  const getHealthBadge = (status?: string) => {
+    switch(status) {
+      case 'excellent': return { text: 'Excelente', icon: Star, color: 'bg-green-100 text-green-800' };
+      case 'good': return { text: 'Buena', icon: Heart, color: 'bg-blue-100 text-blue-800' };
+      case 'fair': return { text: 'Regular', icon: Activity, color: 'bg-yellow-100 text-yellow-800' };
+      case 'poor': return { text: 'Atención', icon: AlertTriangle, color: 'bg-red-100 text-red-800' };
+      default: return { text: 'Sin datos', icon: Stethoscope, color: 'bg-gray-100 text-gray-800' };
+    }
+  };
+
+  const healthInfo = getHealthBadge(animal.healthStatus);
+
+  // Filtrar producciones de este animal
+  const animalProductions = milkProductions?.filter(p => p.animalId === animal.id) || [];
+  
+  // === CÁLCULOS PROFESIONALES PARA ANALYTICS ===
+  
+  /**
+   * Calcular métricas de producción con precisión para ML
+   * Agrupa por fecha para obtener estadísticas diarias reales
+   */
+  const calculateProductionMetrics = () => {
+    // Agrupar producciones por fecha
+    const productionsByDate = animalProductions.reduce((acc, prod) => {
+      const date = prod.date;
+      if (!acc[date]) {
+        acc[date] = {
+          productions: [],
+          total: 0,
+          periods: new Set<string>()
+        };
+      }
+      acc[date].productions.push(prod);
+      acc[date].total += prod.quantity || 0;
+      acc[date].periods.add(prod.period);
+      return acc;
+    }, {} as Record<string, { productions: typeof animalProductions; total: number; periods: Set<string> }>);
+    
+    // Calcular estadísticas
+    const dailyTotals = Object.values(productionsByDate).map(day => day.total);
+    const daysWithProduction = dailyTotals.length;
+    
+    // Total acumulado
+    const totalProduction = dailyTotals.reduce((sum, daily) => sum + daily, 0);
+    
+    // Promedio diario (solo días con producción)
+    const avgDailyProduction = daysWithProduction > 0 
+      ? totalProduction / daysWithProduction 
+      : 0;
+    
+    // Desviación estándar para detectar anomalías
+    const variance = daysWithProduction > 0
+      ? dailyTotals.reduce((sum, daily) => sum + Math.pow(daily - avgDailyProduction, 2), 0) / daysWithProduction
+      : 0;
+    const stdDev = Math.sqrt(variance);
+    
+    // Tendencia (últimos 7 días vs promedio histórico)
+    const last7Days = Object.entries(productionsByDate)
+      .sort(([dateA], [dateB]) => dateB.localeCompare(dateA))
+      .slice(0, 7)
+      .map(([_, data]) => data.total);
+    
+    const recentAvg = last7Days.length > 0
+      ? last7Days.reduce((sum, val) => sum + val, 0) / last7Days.length
+      : 0;
+    
+    const trend = recentAvg > avgDailyProduction * 1.05 ? 'increasing' :
+                  recentAvg < avgDailyProduction * 0.95 ? 'decreasing' : 'stable';
+    
+    return {
+      totalProduction,
+      avgDailyProduction,
+      daysWithProduction,
+      stdDev,
+      trend,
+      recentAvg,
+      productionsByDate
+    };
+  };
+  
+  const metrics = calculateProductionMetrics();
+  
+  /**
+   * Obtener la producción más reciente con contexto completo
+   */
+  // Tipo para la información de última producción
+  const getLastProductionInfo = () => {
+    if (animalProductions.length === 0) return null;
+    
+    // Ordenar por fecha y período para obtener la más reciente
+    const sorted = [...animalProductions].sort((a, b) => {
+      // Primero por fecha
+      const dateCompare = b.date.localeCompare(a.date);
+      if (dateCompare !== 0) return dateCompare;
+      
+      // Luego por período (night > evening > afternoon > morning)
+      const periodOrder: Record<string, number> = { morning: 0, afternoon: 1, evening: 2, night: 3 };
+      return (periodOrder[b.period] || 0) - (periodOrder[a.period] || 0);
+    });
+    
+    const lastProduction = sorted[0];
+    const lastDate = lastProduction.date;
+    
+    // Obtener todas las producciones del último día
+    const lastDayProductions = animalProductions.filter(p => p.date === lastDate);
+    const lastDayTotal = lastDayProductions.reduce((sum, p) => sum + (p.quantity || 0), 0);
+    
+    return {
+      lastProduction,
+      lastDayTotal,
+      lastDayProductions,
+      dayCompleteness: lastDayProductions.length // Cuántos turnos se registraron
+    };
+  };
+  
+  const lastProductionInfo = getLastProductionInfo();
+  
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
+            onClick={onClose}
+          />
+
+          <div className="flex min-h-full items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ duration: 0.3 }}
+              className="relative w-full max-w-4xl bg-white rounded-xl shadow-2xl overflow-hidden"
+            >
+              {/* Header con gradiente */}
+              <div className={`relative h-32 bg-gradient-to-br ${
+                animal.sex === 'female' ? 'from-pink-400 to-purple-600' : 'from-blue-400 to-cyan-600'
+              }`}>
+                <div className="absolute inset-0 bg-black bg-opacity-20" />
+                
+                {/* Botón cerrar */}
+                <button
+                  onClick={onClose}
+                  className="absolute top-4 right-4 text-white hover:bg-white hover:bg-opacity-20 rounded-lg p-2 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+
+                {/* Info principal */}
+                <div className="absolute bottom-4 left-6 right-6 flex items-end justify-between">
+                  <div className="flex items-center space-x-4">
+                    <motion.div 
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ delay: 0.2, type: "spring" }}
+                      className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-lg"
+                    >
+                      <Package className="h-10 w-10 text-gray-700" />
+                    </motion.div>
+                    
+                    <div className="text-white">
+                      <h2 className="text-3xl font-bold">{animal.name || animal.tag}</h2>
+                      <div className="flex items-center space-x-3 mt-1">
+                        <Badge variant="secondary" className="bg-white bg-opacity-20 text-white border-0">
+                          {animal.tag}
+                        </Badge>
+                        <span className="text-sm opacity-90">
+                          {animal.sex === 'female' ? '♀ Hembra' : '♂ Macho'}
+                        </span>
+                        {animal.breed && (
+                          <span className="text-sm opacity-90">{animal.breed}</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <Button
+                    onClick={() => onEditAnimal(animal)}
+                    variant="secondary"
+                    size="sm"
+                    className="bg-white bg-opacity-20 hover:bg-opacity-30 text-white border-0"
+                  >
+                    <Edit className="h-4 w-4 mr-2" />
+                    Editar
+                  </Button>
+                </div>
+              </div>
+
+              {/* Contenido con tabs */}
+              <div className="p-6">
+                <Tabs value={activeTab} onValueChange={setActiveTab}>
+                  <TabsList className="grid w-full grid-cols-3 mb-6">
+                    <TabsTrigger value="info" className="flex items-center space-x-2">
+                      <FileText className="h-4 w-4" />
+                      <span>Información</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="production" className="flex items-center space-x-2">
+                      <Droplets className="h-4 w-4" />
+                      <span>Producción</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="health" className="flex items-center space-x-2">
+                      <Heart className="h-4 w-4" />
+                      <span>Salud</span>
+                    </TabsTrigger>
+                  </TabsList>
+
+                  {/* Tab: Información General */}
+                  <TabsContent value="info" className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Datos básicos */}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="text-lg">Datos básicos</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Edad:</span>
+                            <span className="font-medium">{getAgeInMonths()}</span>
+                          </div>
+                          {animal.birthDate && (
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Nacimiento:</span>
+                              <span className="font-medium">
+                                {new Date(animal.birthDate).toLocaleDateString('es-ES')}
+                              </span>
+                            </div>
+                          )}
+                          {animal.weight && (
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Peso:</span>
+                              <span className="font-medium">{animal.weight} kg</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Estado:</span>
+                            <Badge className={healthInfo.color}>
+                              <healthInfo.icon className="h-3 w-3 mr-1" />
+                              {healthInfo.text}
+                            </Badge>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Información adicional */}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="text-lg">Información adicional</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Etiqueta:</span>
+                            <span className="font-medium">{animal.tag}</span>
+                          </div>
+                          {animal.type && (
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Tipo:</span>
+                              <span className="font-medium capitalize">{animal.type}</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Registrado:</span>
+                            <span className="font-medium">
+                              {new Date(animal.createdAt).toLocaleDateString('es-ES')}
+                            </span>
+                          </div>
+                          {animal.updatedAt && (
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Actualizado:</span>
+                              <span className="font-medium">
+                                {new Date(animal.updatedAt).toLocaleDateString('es-ES')}
+                              </span>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </div>
+
+                    {/* Notas */}
+                    {animal.notes && (
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="text-lg flex items-center">
+                            <FileText className="h-5 w-5 mr-2 text-gray-500" />
+                            Notas
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="text-gray-700 whitespace-pre-wrap">{animal.notes}</p>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </TabsContent>
+
+                  {/* Tab: Producción */}
+                  <TabsContent value="production" className="space-y-4">
+                    {animal.sex === 'female' ? (
+                      <>
+                        {/* Métricas de producción */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <Card>
+                            <CardHeader className="pb-2">
+                              <CardTitle className="text-sm text-gray-600">Producción total</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              <p className="text-2xl font-bold text-blue-600">
+                                {metrics.totalProduction.toFixed(1)} L
+                              </p>
+                              <p className="text-xs text-gray-500 mt-1">
+                                {metrics.daysWithProduction} días registrados
+                              </p>
+                            </CardContent>
+                          </Card>
+
+                          <Card>
+                            <CardHeader className="pb-2">
+                              <CardTitle className="text-sm text-gray-600">Promedio diario</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              <p className="text-2xl font-bold text-green-600">
+                                {metrics.avgDailyProduction.toFixed(1)} L
+                              </p>
+                              <p className="text-xs text-gray-500 mt-1">Por día registrado</p>
+                            </CardContent>
+                          </Card>
+
+                          <Card>
+                            <CardHeader className="pb-2">
+                              <CardTitle className="text-sm text-gray-600">Última producción</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              {lastProductionInfo ? (
+                                <>
+                                  <p className="text-2xl font-bold text-purple-600">
+                                    {lastProductionInfo?.lastDayTotal.toFixed(1)} L
+                                  </p>
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    {new Date(lastProductionInfo?.lastProduction.date).toLocaleDateString('es-ES')}
+                                  </p>
+                                </>
+                              ) : (
+                                <p className="text-sm text-gray-500">Sin registros</p>
+                              )}
+                            </CardContent>
+                          </Card>
+                        </div>
+
+                        {/* Gráfico de producción */}
+                        {animalProductions.length > 0 && (
+                          <Card>
+                            <CardHeader>
+                              <CardTitle className="flex items-center justify-between">
+                                <span className="flex items-center">
+                                  <BarChart3 className="h-5 w-5 mr-2 text-blue-500" />
+                                  Histórico de producción
+                                </span>
+                                <Badge variant="outline">Últimos 30 días</Badge>
+                              </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="h-64">
+                                <ProductionChart 
+                                  productions={animalProductions}
+                                  days={30}
+                                  type="line"
+                                />
+                              </div>
+                            </CardContent>
+                          </Card>
+                        )}
+
+                        {/* Botón registrar producción */}
+                        <div className="flex justify-center pt-4">
+                          <Button
+                            onClick={() => onRegisterProduction(animal)}
+                            size="lg"
+                            className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-lg"
+                          >
+                            <Milk className="h-5 w-5 mr-2" />
+                            Registrar nueva producción
+                          </Button>
+                        </div>
+                      </>
+                    ) : (
+                      <Card>
+                        <CardContent className="py-12 text-center">
+                          <Package className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                          <p className="text-gray-500">
+                            La producción de leche solo está disponible para animales hembra
+                          </p>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </TabsContent>
+
+                  {/* Tab: Salud */}
+                  <TabsContent value="health" className="space-y-4">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center">
+                          <Heart className="h-5 w-5 mr-2 text-red-500" />
+                          Estado de salud actual
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                          <div className="flex items-center space-x-3">
+                            <div className={`p-3 rounded-full bg-gradient-to-br ${getHealthColor(animal.healthStatus)}`}>
+                              <healthInfo.icon className="h-8 w-8 text-white" />
+                            </div>
+                            <div>
+                              <p className="font-semibold text-lg">{healthInfo.text}</p>
+                              <p className="text-sm text-gray-600">Última actualización: Hoy</p>
+                            </div>
+                          </div>
+                          <Badge className={healthInfo.color} variant="outline">
+                            {animal.healthStatus || 'N/A'}
+                          </Badge>
+                        </div>
+
+                        {/* Indicadores de salud */}
+                        <div className="mt-6 space-y-3">
+                          <div className="flex items-center justify-between p-3 border rounded-lg">
+                            <span className="text-gray-600 flex items-center">
+                              <Activity className="h-4 w-4 mr-2" />
+                              Actividad física
+                            </span>
+                            <span className="font-medium text-green-600">Normal</span>
+                          </div>
+                          <div className="flex items-center justify-between p-3 border rounded-lg">
+                            <span className="text-gray-600 flex items-center">
+                              <Droplets className="h-4 w-4 mr-2" />
+                              Hidratación
+                            </span>
+                            <span className="font-medium text-green-600">Adecuada</span>
+                          </div>
+                          <div className="flex items-center justify-between p-3 border rounded-lg">
+                            <span className="text-gray-600 flex items-center">
+                              <Weight className="h-4 w-4 mr-2" />
+                              Peso corporal
+                            </span>
+                            <span className="font-medium text-green-600">
+                              {animal.weight ? `${animal.weight} kg` : 'No registrado'}
+                            </span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Próximas vacunas/revisiones */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center">
+                          <Calendar className="h-5 w-5 mr-2 text-blue-500" />
+                          Próximas revisiones
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                            <div className="flex items-center space-x-3">
+                              <Clock className="h-5 w-5 text-blue-600" />
+                              <div>
+                                <p className="font-medium">Vacunación anual</p>
+                                <p className="text-sm text-gray-600">Prevención general</p>
+                              </div>
+                            </div>
+                            <Badge variant="outline">En 2 meses</Badge>
+                          </div>
+                          <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+                            <div className="flex items-center space-x-3">
+                              <Stethoscope className="h-5 w-5 text-yellow-600" />
+                              <div>
+                                <p className="font-medium">Chequeo general</p>
+                                <p className="text-sm text-gray-600">Revisión veterinaria</p>
+                              </div>
+                            </div>
+                            <Badge variant="outline">En 3 semanas</Badge>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
+                </Tabs>
+
+                {/* Footer con acciones */}
+                <div className="flex justify-end mt-6 pt-6 border-t">
+                  <Button variant="outline" onClick={onClose}>
+                    Cerrar
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      )}
+    </AnimatePresence>
+  );
+}

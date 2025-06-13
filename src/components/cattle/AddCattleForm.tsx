@@ -32,23 +32,23 @@ const BREED_OPTIONS = [
   { value: 'Indubrasil', label: 'Indubrasil', type: 'beef', popular: ['BR', 'MX'] },
   { value: 'Tabapuã', label: 'Tabapuã', type: 'beef', popular: ['BR'] },
   
-  // === RAZAS MEXICANAS 🇲🇽 ===
+  // === RAZAS MEXICANAS  ===
   { value: 'Criollo', label: 'Criollo', type: 'dual', popular: ['MX', 'CO'] },
   { value: 'Beefmaster', label: 'Beefmaster', type: 'beef', popular: ['MX'] },
   { value: 'Cebú Mexicano', label: 'Cebú Mexicano', type: 'beef', popular: ['MX'] },
   
-  // === RAZAS COLOMBIANAS 🇨🇴 ===
+  // === RAZAS COLOMBIANAS  ===
   { value: 'Normando', label: 'Normando', type: 'dual', popular: ['CO'] },
   { value: 'Romosinuano', label: 'Romosinuano', type: 'beef', popular: ['CO'] },
   { value: 'Sanmartinero', label: 'Sanmartinero', type: 'beef', popular: ['CO'] },
   { value: 'Blanco Orejinegro', label: 'Blanco Orejinegro (BON)', type: 'dual', popular: ['CO'] },
   
-  // === RAZAS BRASILEÑAS 🇧🇷 ===
+  // === RAZAS BRASILEÑAS  ===
   { value: 'Senepol', label: 'Senepol', type: 'beef', popular: ['BR', 'MX'] },
   { value: 'Canchim', label: 'Canchim', type: 'beef', popular: ['BR'] },
   { value: 'Pitangueiras', label: 'Pitangueiras', type: 'beef', popular: ['BR'] },
   
-  // === RAZAS ESPAÑOLAS 🇪🇸 ===
+  // === RAZAS ESPAÑOLAS  ===
   { value: 'Avileña', label: 'Avileña-Negra Ibérica', type: 'beef', popular: ['ES'] },
   { value: 'Asturiana', label: 'Asturiana de los Valles', type: 'beef', popular: ['ES'] },
   { value: 'Retinta', label: 'Retinta', type: 'beef', popular: ['ES'] },
@@ -210,10 +210,10 @@ export default function AddCattleForm({ onSuccess, hideCancel = false }: AddCatt
   // Función para obtener el indicador de país de una raza
   const getCountryIndicator = (breed: typeof BREED_OPTIONS[0]) => {
     const indicators: string[] = [];
-    if (breed.popular.includes('MX')) indicators.push('🇲🇽');
-    if (breed.popular.includes('CO')) indicators.push('🇨🇴');
-    if (breed.popular.includes('BR')) indicators.push('🇧🇷');
-    if (breed.popular.includes('ES')) indicators.push('🇪🇸');
+    if (breed.popular.includes('MX')) indicators.push('');
+    if (breed.popular.includes('CO')) indicators.push('');
+    if (breed.popular.includes('BR')) indicators.push('');
+    if (breed.popular.includes('ES')) indicators.push('');
     return indicators.length > 0 ? ` ${indicators.join(' ')}` : '';
   };
 

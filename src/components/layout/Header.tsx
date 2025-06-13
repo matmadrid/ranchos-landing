@@ -28,7 +28,6 @@ import { LogoHeader } from '@/components/ui/logo-header';
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
   { name: 'Analítica', href: '/analytics', icon: BarChart3 },
-  { name: 'Perfil', href: '/profile', icon: User },
 ];
 
 export default function Header() {

@@ -1,4 +1,4 @@
-// src/app/dashboard/page.tsx
+// src/app/dashboard/page.tsx - INTEGRACIÓN COMPLETA CON MODAL INDIVIDUAL
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -7,6 +7,11 @@ import useRanchOSStore from '@/store';
 import type { Animal } from '@/types';
 import { UserProfilePrompt } from '@/components/dashboard/UserProfilePrompt';
 import EditAnimalModal from '@/components/cattle/EditAnimalModal';
+// 🎯 NUEVOS IMPORTS: Modal individual y analytics
+import AnimalDetailModal from '@/components/cattle/AnimalDetailModal';
+import ProductionChart from '@/components/analytics/ProductionChart';
+// 🥛 MODAL DE PRODUCCIÓN INDIVIDUAL
+import MilkProductionModal from '@/components/production/MilkProductionModal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -32,13 +37,14 @@ import {
   Star,
   Zap,
   Package,
-  Stethoscope
+  Stethoscope,
+  Milk,
+  BarChart3,
+  X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// 🎨 TIPOS
-
-// 🎨 COMPONENTE: KPI Card Premium
+// 🎨 COMPONENTE: KPI Card Premium (ACTUALIZADO con Modal Analytics)
 const KPICard = ({ 
   title, 
   value, 
@@ -48,7 +54,8 @@ const KPICard = ({
   trendValue, 
   gradient,
   delay = 0,
-  onClick
+  onClick,
+  showAnalytics = false // 🎯 NUEVO: Para mostrar analytics en modal
 }: {
   title: string;
   value: string | number;
@@ -59,6 +66,7 @@ const KPICard = ({
   gradient: string;
   delay?: number;
   onClick?: () => void;
+  showAnalytics?: boolean;
 }) => {
   return (
     <motion.div
@@ -105,7 +113,11 @@ const KPICard = ({
               className="opacity-0 group-hover:opacity-100 transition-opacity duration-200"
               whileHover={{ scale: 1.1 }}
             >
-              <ArrowUpRight className="h-5 w-5 text-gray-400" />
+              {showAnalytics ? (
+                <BarChart3 className="h-5 w-5 text-gray-400" />
+              ) : (
+                <ArrowUpRight className="h-5 w-5 text-gray-400" />
+              )}
             </motion.div>
           </div>
         </CardHeader>
@@ -131,8 +143,94 @@ const KPICard = ({
   );
 };
 
-// 🎨 COMPONENTE: Animal Card Premium
-const AnimalCard = ({ animal, onEdit, delay = 0 }: { animal: Animal; onEdit: (animal: Animal) => void; delay?: number }) => {
+// 🎯 NUEVO: Modal de Analytics de Producción Global
+const ProductionAnalyticsModal = ({ isOpen, onClose, productions }: { 
+  isOpen: boolean; 
+  onClose: () => void; 
+  productions: any[] 
+}) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 overflow-y-auto">
+      <div 
+        className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
+        onClick={onClose}
+      />
+
+      <div className="flex min-h-full items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.95 }}
+          className="relative w-full max-w-4xl bg-white rounded-xl shadow-2xl"
+        >
+          <div className="flex items-center justify-between p-6 border-b">
+            <div className="flex items-center gap-3">
+              <BarChart3 className="w-6 h-6 text-emerald-600" />
+              <h2 className="text-xl font-semibold text-gray-900">
+                Analytics de Producción
+              </h2>
+            </div>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-500 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          <div className="p-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Últimos 7 días</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-64">
+                    <ProductionChart 
+                      productions={productions}
+                      days={7}
+                      type="line"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Últimos 30 días</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-64">
+                    <ProductionChart 
+                      productions={productions}
+                      days={30}
+                      type="bar"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="flex justify-end">
+              <Button onClick={onClose} variant="outline">
+                Cerrar
+              </Button>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    </div>
+  );
+};
+
+// 🎨 COMPONENTE: Animal Card Premium (ACTUALIZADO con nueva interacción)
+const AnimalCard = ({ animal, onViewDetails, delay = 0 }: { 
+  animal: Animal; 
+  onViewDetails: (animal: Animal) => void; 
+  delay?: number 
+}) => {
   const getHealthColor = (status?: string) => {
     switch(status) {
       case 'excellent': return 'from-green-400 to-emerald-600';
@@ -155,7 +253,6 @@ const AnimalCard = ({ animal, onEdit, delay = 0 }: { animal: Animal; onEdit: (an
 
   const healthInfo = getHealthBadge(animal.healthStatus);
   
-  // Calcular edad en meses de forma segura
   const getAgeInMonths = () => {
     if (!animal.birthDate) return null;
     const birthDate = new Date(animal.birthDate);
@@ -175,10 +272,12 @@ const AnimalCard = ({ animal, onEdit, delay = 0 }: { animal: Animal; onEdit: (an
       whileHover={{ x: 10, transition: { duration: 0.2 } }}
       className="group"
     >
-      <div className="relative p-4 bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-gray-200">
+      <div 
+        className="relative p-4 bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-gray-200 cursor-pointer"
+        onClick={() => onViewDetails(animal)} // 🎯 NUEVA INTERACCIÓN
+      >
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            {/* Avatar del animal con gradiente */}
             <motion.div 
               className="relative"
               whileHover={{ rotate: [0, -5, 5, 0] }}
@@ -190,13 +289,11 @@ const AnimalCard = ({ animal, onEdit, delay = 0 }: { animal: Animal; onEdit: (an
                 <Package className="h-8 w-8 text-white" />
               </div>
               
-              {/* Badge de estado de salud */}
               <div className={`absolute -bottom-1 -right-1 w-6 h-6 bg-gradient-to-br ${getHealthColor(animal.healthStatus)} rounded-full flex items-center justify-center`}>
                 <healthInfo.icon className="h-3 w-3 text-white" />
               </div>
             </motion.div>
 
-            {/* Información del animal */}
             <div className="flex-1">
               <div className="flex items-center space-x-2">
                 <h3 className="font-bold text-lg text-gray-900">{animal.name || animal.tag}</h3>
@@ -241,28 +338,16 @@ const AnimalCard = ({ animal, onEdit, delay = 0 }: { animal: Animal; onEdit: (an
             </div>
           </div>
 
-          {/* Acciones */}
           <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-            <motion.button
+            <motion.div
               whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => onEdit(animal)}
-              className="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors duration-200"
-            >
-              <Edit className="h-4 w-4 text-gray-600" />
-            </motion.button>
-            
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
               className="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors duration-200"
             >
               <ChevronRight className="h-4 w-4 text-gray-600" />
-            </motion.button>
+            </motion.div>
           </div>
         </div>
 
-        {/* Barra de progreso de salud */}
         <div className="mt-3 h-1 bg-gray-200 rounded-full overflow-hidden">
           <motion.div
             className={`h-full bg-gradient-to-r ${getHealthColor(animal.healthStatus)}`}
@@ -281,7 +366,7 @@ const AnimalCard = ({ animal, onEdit, delay = 0 }: { animal: Animal; onEdit: (an
   );
 };
 
-// 🎨 COMPONENTE: Empty State Premium
+// 🎨 COMPONENTE: Empty State Premium (sin cambios)
 const EmptyState = ({ onAddAnimal }: { onAddAnimal: () => void }) => {
   return (
     <motion.div
@@ -352,7 +437,7 @@ const EmptyState = ({ onAddAnimal }: { onAddAnimal: () => void }) => {
   );
 };
 
-// 🚀 COMPONENTE PRINCIPAL: Dashboard Premium
+// 🚀 COMPONENTE PRINCIPAL: Dashboard Premium CON INTEGRACIÓN COMPLETA
 export default function DashboardPage() {
   const router = useRouter();
   const {
@@ -363,7 +448,8 @@ export default function DashboardPage() {
     isOnboardingComplete,
     cattle,
     getCattleByRanch,
-    getTotalMilkProduction
+    getTotalMilkProduction,
+    milkProductions // 🎯 NUEVO: Para analytics globales
   } = useRanchOSStore();
   
   const [showProfilePrompt, setShowProfilePrompt] = useState(false);
@@ -372,9 +458,14 @@ export default function DashboardPage() {
   const [filterBreed, setFilterBreed] = useState<string>('all');
   const [editingAnimal, setEditingAnimal] = useState<Animal | null>(null);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  
+  // 🎯 NUEVOS ESTADOS: Modal individual y analytics
+  const [selectedAnimal, setSelectedAnimal] = useState<Animal | null>(null);
+  const [showProductionAnalytics, setShowProductionAnalytics] = useState(false);
+  const [showMilkModal, setShowMilkModal] = useState(false);
+  const [milkModalAnimal, setMilkModalAnimal] = useState<Animal | null>(null);
 
   useEffect(() => {
-    // Verificar si se debe mostrar el prompt de perfil
     const isTemporaryUser = localStorage.getItem('isTemporaryUser') === 'true';
     const shouldShowPrompt = isTemporaryUser && !profilePromptDismissed;
     
@@ -389,7 +480,7 @@ export default function DashboardPage() {
   const handleCompleteProfile = () => {
     setProfilePromptDismissed(true);
     setShowProfilePrompt(false);
-    router.push('/auth/register');
+    router.push('/auth/register?message=complete-profile&redirect=/dashboard');
   };
 
   const handleEditAnimal = (animal: Animal) => {
@@ -401,10 +492,39 @@ export default function DashboardPage() {
   };
 
   const handleAddAnimal = () => {
-    router.push('/animals/new');
+    router.push('/animals/add');
   };
 
-  // Verificaciones de rancho
+  // 🎯 NUEVOS HANDLERS: Modal individual y producción
+  const handleViewAnimalDetails = (animal: Animal) => {
+    setSelectedAnimal(animal);
+  };
+
+  const handleCloseAnimalDetails = () => {
+    setSelectedAnimal(null);
+  };
+
+  const handleRegisterProduction = (animal: Animal) => {
+    setMilkModalAnimal(animal);
+    setShowMilkModal(true);
+    setSelectedAnimal(null); // Cerrar modal de detalles
+  };
+
+  const handleCloseMilkModal = () => {
+    setShowMilkModal(false);
+    setMilkModalAnimal(null);
+  };
+
+  // 🎯 ANALYTICS GLOBALES
+  const handleShowProductionAnalytics = () => {
+    setShowProductionAnalytics(true);
+  };
+
+  const handleCloseProductionAnalytics = () => {
+    setShowProductionAnalytics(false);
+  };
+
+  // Verificaciones de rancho (sin cambios)
   if (!currentRanch) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6 flex items-center justify-center">
@@ -446,10 +566,9 @@ export default function DashboardPage() {
     );
   }
 
-  // Calcular métricas
+  // Calcular métricas (sin cambios)
   const ranchCattle = currentRanch ? getCattleByRanch(currentRanch.id) : [];
   
-  // Filtrado seguro con verificación de propiedades opcionales
   const filteredCattle = ranchCattle.filter((animal: Animal) => {
     const matchesSearch = !searchTerm || 
       animal.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -469,13 +588,11 @@ export default function DashboardPage() {
   const tareasPendientes = Math.min(totalAnimales, 3);
   const alertas = 0;
 
-  // Obtener razas únicas de forma segura
   const uniqueBreeds = [...new Set(ranchCattle
     .map((c: Animal) => c.breed)
     .filter((breed): breed is string => breed !== undefined)
   )];
 
-  // Obtener saludo según hora del día
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 12) return 'Buenos días';
@@ -492,7 +609,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="relative z-10 p-6 max-w-7xl mx-auto">
-        {/* Header Premium */}
+        {/* Header Premium (sin cambios) */}
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -531,7 +648,7 @@ export default function DashboardPage() {
           </div>
         </motion.div>
         
-        {/* KPI Cards Grid */}
+        {/* KPI Cards Grid - ACTUALIZADO */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <KPICard
             title="Total Animales"
@@ -545,6 +662,7 @@ export default function DashboardPage() {
             onClick={() => {}}
           />
           
+          {/* 🎯 KPI DE PRODUCCIÓN CON ANALYTICS */}
           <KPICard
             title="Producción Hoy"
             value={`${produccionHoy.toFixed(1)} L`}
@@ -554,7 +672,8 @@ export default function DashboardPage() {
             trendValue="+8%"
             gradient="from-emerald-400 to-green-600"
             delay={0.1}
-            onClick={() => {}}
+            onClick={handleShowProductionAnalytics} // 🎯 AHORA ABRE ANALYTICS
+            showAnalytics={true}
           />
           
           <KPICard
@@ -582,7 +701,7 @@ export default function DashboardPage() {
           />
         </div>
 
-        {/* Sección de Animales */}
+        {/* Sección de Animales - ACTUALIZADA */}
         {totalAnimales > 0 ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -600,11 +719,10 @@ export default function DashboardPage() {
                       </span>
                     </CardTitle>
                     <CardDescription className="mt-1">
-                      Administra y monitorea la salud de tu ganado
+                      Haz click en cualquier animal para ver detalles y registrar producción
                     </CardDescription>
                   </div>
                   
-                  {/* Controles de búsqueda y filtros */}
                   <div className="flex flex-col sm:flex-row gap-3">
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -633,7 +751,6 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                {/* Filtros expandibles */}
                 <AnimatePresence>
                   {isFilterOpen && (
                     <motion.div
@@ -695,7 +812,7 @@ export default function DashboardPage() {
                       <AnimalCard 
                         key={animal.id} 
                         animal={animal} 
-                        onEdit={handleEditAnimal}
+                        onViewDetails={handleViewAnimalDetails} // 🎯 NUEVA INTERACCIÓN
                         delay={index * 0.1}
                       />
                     ))}
@@ -718,7 +835,7 @@ export default function DashboardPage() {
           <EmptyState onAddAnimal={handleAddAnimal} />
         )}
         
-        {/* Prompt de perfil */}
+        {/* Modales */}
         {showProfilePrompt && (
           <UserProfilePrompt
             onDismiss={handleDismissPrompt}
@@ -726,12 +843,38 @@ export default function DashboardPage() {
           />
         )}
 
-        {/* Modal de edición */}
         {editingAnimal && (
           <EditAnimalModal
             animal={editingAnimal}
             isOpen={!!editingAnimal}
             onClose={handleCloseEditModal}
+          />
+        )}
+
+        {/* 🎯 MODAL INDIVIDUAL POR ANIMAL */}
+        {selectedAnimal && (
+          <AnimalDetailModal
+            animal={selectedAnimal}
+            isOpen={!!selectedAnimal}
+            onClose={handleCloseAnimalDetails}
+            onEditAnimal={handleEditAnimal}
+            onRegisterProduction={handleRegisterProduction}
+          />
+        )}
+
+        {/* 🎯 MODAL DE ANALYTICS GLOBALES */}
+        <ProductionAnalyticsModal
+          isOpen={showProductionAnalytics}
+          onClose={handleCloseProductionAnalytics}
+          productions={milkProductions || []}
+        />
+
+        {/* 🥛 MODAL DE PRODUCCIÓN INDIVIDUAL */}
+        {showMilkModal && milkModalAnimal && (
+          <MilkProductionModal
+            isOpen={showMilkModal}
+            onClose={handleCloseMilkModal}
+            // Aquí podrías pasar el animal específico si modificas el modal
           />
         )}
       </div>
