@@ -158,7 +158,7 @@ export default function OnboardingPage() {
     }));
   };
 
-  // Completar onboarding
+  // Completar onboarding - Versión integrada con manejo completo de ProcessingResult
   const completeOnboarding = async () => {
     if (isProcessing) return;
     
@@ -173,14 +173,14 @@ export default function OnboardingPage() {
         email: formData.profile.email || `demo${Date.now()}@ranchos.app`,
         phone: formData.profile.phone,
         location: formData.profile.location,
-        countryCode: 'MX' as const, // México por defecto
+        countryCode: 'MX' as const,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
       
       setCurrentUser(tempUser);
 
-      // 2. Crear rancho
+      // 2. Crear rancho - MANEJA ProcessingResult completo
       const ranchData = {
         name: formData.ranch.name || 'Rancho Demo',
         location: formData.ranch.location || 'México',
@@ -192,26 +192,39 @@ export default function OnboardingPage() {
         countryCode: 'MX' as const
       };
       
-      // El store devuelve una Promise con ProcessingResult
+      // addRanch devuelve ProcessingResult<Ranch>
       const ranchResult = await addRanch(ranchData);
       
       if (!ranchResult.success) {
-        throw new Error('Error al crear el rancho');
+        // Mostrar errores específicos
+        ranchResult.errors?.forEach(error => {
+          if (error.severity === 'error') {
+            showError(error.message, `Error en campo: ${error.field}`);
+          }
+        });
+        
+        throw new Error(
+          ranchResult.errors?.find(e => e.severity === 'error')?.message || 
+          'Error al crear el rancho'
+        );
       }
 
-      // 3. Obtener el ID del rancho creado
-      const newRanchId = ranchResult.data?.id;
+      // Mostrar warnings si existen
+      ranchResult.warnings?.forEach(warning => {
+        console.warn(`[Onboarding Warning] ${warning.message}`);
+      });
+
+      // 3. Obtener el rancho creado desde el resultado
+      const newRanch = ranchResult.data;
       
-      if (!newRanchId) {
-        throw new Error('No se pudo obtener el ID del rancho');
+      if (!newRanch || !newRanch.id) {
+        throw new Error('No se pudo obtener el rancho creado');
       }
 
       // 4. Establecer rancho activo
-      if (ranchResult.data) {
-        setActiveRanch(ranchResult.data);
-      }
+      setActiveRanch(newRanch);
 
-      // 5. Crear animal si se proporcionó
+      // 5. Crear animal si se proporcionó - TAMBIÉN MANEJA ProcessingResult
       if (formData.animal.tag && formData.animal.breed) {
         const animalData = {
           tag: formData.animal.tag,
@@ -220,25 +233,51 @@ export default function OnboardingPage() {
           sex: formData.animal.sex,
           birthDate: formData.animal.birthDate,
           weight: formData.animal.weight ? parseInt(formData.animal.weight) : undefined,
+          weightUnit: 'kg' as const, // Unidad por defecto
           healthStatus: 'good' as const,
           notes: 'Animal de demostración',
-          ranchId: newRanchId
+          ranchId: newRanch.id
         };
         
-        await addCattle(animalData);
+        // addCattle devuelve ProcessingResult<Animal>
+        const animalResult = await addCattle(animalData);
+        
+        if (!animalResult.success) {
+          // No es crítico si falla la creación del animal
+          console.error('Error creando animal:', animalResult.errors);
+          showError(
+            'No se pudo crear el animal', 
+            'Puedes agregarlo más tarde desde el dashboard'
+          );
+        } else if (animalResult.warnings?.length) {
+          // Mostrar advertencias del animal
+          animalResult.warnings.forEach(warning => {
+            console.warn(`[Animal Warning] ${warning.message}`);
+          });
+        }
       }
 
       // 6. Configurar cookies para usuario temporal
-      AuthCookieManager.setTemporaryUser(tempUserId, newRanchId);
+      AuthCookieManager.setTemporaryUser(tempUserId, newRanch.id);
       
       // 7. Limpiar progreso guardado
       clearProgress();
       
-      // 8. Mostrar notificación de éxito
+      // 8. Mostrar notificación de éxito con información del trace
       showSuccess(
         '¡Excelente!', 
-        'Tu rancho demo está listo. Explora todas las funciones.'
+        `Tu rancho demo está listo. ID de seguimiento: ${ranchResult.traceId || 'N/A'}`
       );
+      
+      // Log para debugging en desarrollo
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Onboarding completado:', {
+          traceId: ranchResult.traceId,
+          ranchId: newRanch.id,
+          processingTime: ranchResult.processingTime,
+          metadata: ranchResult.metadata
+        });
+      }
       
       // 9. Navegar al dashboard después de la celebración
       setTimeout(() => {
@@ -249,8 +288,9 @@ export default function OnboardingPage() {
       console.error('Error al completar onboarding:', error);
       showError(
         'Error al crear tu rancho',
-        'Por favor intenta nuevamente o contacta soporte.'
+        error instanceof Error ? error.message : 'Por favor intenta nuevamente'
       );
+    } finally {
       setIsProcessing(false);
     }
   };

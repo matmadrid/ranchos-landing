@@ -56,7 +56,7 @@ export function LogoTech({ className, size = 'md' }: LogoProps) {
         />
       </svg>
       <span className={cn(
-        "font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent",
+        "font-bold text-gray-700", // ✅ Cambiado para coincidir con el header
         textSizes[size]
       )}>
         RanchOS
@@ -111,7 +111,7 @@ export function LogoFarm({ className, size = 'md' }: LogoProps) {
         </defs>
       </svg>
       <span className={cn(
-        "font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent",
+        "font-bold text-gray-700", // ✅ Cambiado para coincidir con el header
         textSizes[size]
       )}>
         RanchOS
@@ -168,7 +168,7 @@ export function LogoHex({ className, size = 'md' }: LogoProps) {
         />
       </svg>
       <span className={cn(
-        "font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent",
+        "font-bold text-gray-700", // ✅ Cambiado para coincidir con el header
         textSizes[size]
       )}>
         RanchOS
@@ -209,7 +209,7 @@ export function LogoCircle({ className, size = 'md' }: LogoProps) {
         <span className={fontSizes[size]}>R</span>
       </div>
       <span className={cn(
-        "font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent",
+        "font-bold text-gray-700", // ✅ Cambiado para coincidir con el header
         textSizes[size]
       )}>
         RanchOS
@@ -249,7 +249,7 @@ export function LogoLucide({ className, size = 'md', icon = 'cpu' }: LogoProps &
     <div className={cn("flex items-center space-x-2", className)}>
       <Icon className={cn(sizes[size], "text-blue-600")} />
       <span className={cn(
-        "font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent",
+        "font-bold text-gray-700", // ✅ Cambiado para coincidir con el header
         textSizes[size]
       )}>
         RanchOS
@@ -258,7 +258,7 @@ export function LogoLucide({ className, size = 'md', icon = 'cpu' }: LogoProps &
   );
 }
 
-// OPCIÓN 6: Logo con Satellite (como Space Ranch)
+// OPCIÓN 6: Logo con Satellite (como Space Ranch) - EL QUE USAS EN EL HEADER
 export function LogoSatellite({ className, size = 'md' }: LogoProps) {
   const sizes = {
     sm: 'h-6 w-6',
@@ -278,7 +278,7 @@ export function LogoSatellite({ className, size = 'md' }: LogoProps) {
     <div className={cn("flex items-center space-x-2", className)}>
       <Satellite className={cn(sizes[size], "text-blue-600")} />
       <span className={cn(
-        "font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent",
+        "font-bold text-gray-700", // ✅ Cambiado para coincidir con el header
         textSizes[size]
       )}>
         RanchOS
@@ -292,7 +292,7 @@ export function LogoSimple({ className }: { className?: string }) {
   return (
     <div className={cn("flex items-center space-x-2", className)}>
       <Satellite className="h-8 w-8 text-blue-600" />
-      <span className="text-2xl font-bold text-gray-900">RanchOS</span>
+      <span className="text-2xl font-bold text-gray-700">RanchOS</span> {/* ✅ Cambiado */}
     </div>
   );
 }
@@ -304,7 +304,7 @@ export function LogoLoading() {
       <div className="animate-pulse">
         <Satellite className="h-12 w-12 text-blue-600" />
       </div>
-      <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent animate-pulse">
+      <span className="text-2xl font-bold text-gray-700 animate-pulse"> {/* ✅ Cambiado */}
         RanchOS
       </span>
     </div>

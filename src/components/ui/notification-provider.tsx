@@ -3,13 +3,13 @@
 
 import React, { createContext, useContext, ReactNode } from 'react';
 import { useToast } from '@/hooks/useToast';
-import { ToastContainer } from './toast';
+import { Toaster } from 'sonner';
 
 interface NotificationContextType {
-  success: (title: string, description?: string) => string;
-  error: (title: string, description?: string) => string;
-  warning: (title: string, description?: string) => string;
-  info: (title: string, description?: string) => string;
+  success: (title: string, description?: string) => string | number;
+  error: (title: string, description?: string) => string | number;
+  warning: (title: string, description?: string) => string | number;
+  info: (title: string, description?: string) => string | number;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
@@ -19,7 +19,7 @@ interface NotificationProviderProps {
 }
 
 export function NotificationProvider({ children }: NotificationProviderProps) {
-  const { toasts, success, error, warning, info, removeToast } = useToast();
+  const { success, error, warning, info } = useToast();
 
   const contextValue: NotificationContextType = {
     success,
@@ -31,7 +31,13 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
   return (
     <NotificationContext.Provider value={contextValue}>
       {children}
-      <ToastContainer toasts={toasts} onRemove={removeToast} />
+      <Toaster 
+        position="top-right"
+        richColors
+        closeButton
+        expand={false}
+        duration={5000}
+      />
     </NotificationContext.Provider>
   );
 }

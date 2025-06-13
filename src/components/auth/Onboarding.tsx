@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Satellite, MapPin, ChevronRight, Check } from 'lucide-react';
-import { useStore } from '@/store';
+import useRanchOSStore from '@/store';
 import AddCattleForm from '@/components/cattle/AddCattleForm';
 
 type OnboardingStep = 'welcome' | 'ranch' | 'firstCattle' | 'complete';
@@ -30,8 +30,10 @@ export default function Onboarding() {
     currentRanch,
     ranches,
     addRanch,
-    setActiveRanch
-  } = useStore();
+    setActiveRanch,
+    currentCountry,
+    unitSystem
+  } = useRanchOSStore();
   
   const {
     register,
@@ -66,9 +68,11 @@ export default function Onboarding() {
     const newRanch = {
       name: data.name,
       location: data.location,
-      size: data.size,
+      size: data.size || 0,
       type: 'mixed' as 'dairy' | 'beef' | 'mixed',
-      isActive: true
+      isActive: true,
+      countryCode: currentCountry,
+      sizeUnit: unitSystem.area
     };
     
     // Agregar el rancho usando la función del store

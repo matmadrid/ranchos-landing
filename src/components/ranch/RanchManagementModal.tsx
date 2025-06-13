@@ -1,30 +1,19 @@
-// src/components/ranch/RanchManagementModal.tsx
 'use client';
 
 import React, { useState } from 'react';
 import { X, Building2, MapPin, ToggleLeft, ToggleRight, Edit2, Trash2 } from 'lucide-react';
-import { useStore } from '@/store';
+import useRanchOSStore from '@/store';
 
 interface RanchManagementModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-interface Ranch {
-  id: string;
-  name: string;
-  location: string;
-  size?: number;
-  type?: 'dairy' | 'beef' | 'mixed';
-  isActive: boolean;
-}
-
 export default function RanchManagementModal({ isOpen, onClose }: RanchManagementModalProps) {
-  // USANDO LAS FUNCIONES CORRECTAS DEL STORE ACTUALIZADO
-  const ranches = useStore((state) => state.ranches);
-  const updateRanch = useStore((state) => state.updateRanch);
-  const removeRanch = useStore((state) => state.removeRanch);
-  const activeRanchId = useStore((state) => state.activeRanchId);
+  const ranches = useRanchOSStore((state) => state.ranches);
+  const updateRanch = useRanchOSStore((state) => state.updateRanch);
+  const deleteRanch = useRanchOSStore((state) => state.deleteRanch);
+  const activeRanch = useRanchOSStore((state) => state.activeRanch);
   
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({ name: '', location: '' });
@@ -35,7 +24,7 @@ export default function RanchManagementModal({ isOpen, onClose }: RanchManagemen
     updateRanch(ranchId, { isActive: !currentStatus });
   };
 
-  const handleEdit = (ranch: Ranch) => {
+  const handleEdit = (ranch: typeof ranches[0]) => {
     setEditingId(ranch.id);
     setEditForm({ name: ranch.name, location: ranch.location });
   };
@@ -50,7 +39,7 @@ export default function RanchManagementModal({ isOpen, onClose }: RanchManagemen
 
   const handleDelete = (ranchId: string, ranchName: string) => {
     if (confirm(`¿Estás seguro de eliminar "${ranchName}"? Se eliminarán todos los animales asociados.`)) {
-      removeRanch(ranchId);
+      deleteRanch(ranchId);
     }
   };
 
@@ -95,7 +84,7 @@ export default function RanchManagementModal({ isOpen, onClose }: RanchManagemen
                   <div 
                     key={ranch.id} 
                     className={`border rounded-lg p-4 ${
-                      ranch.id === activeRanchId ? 'border-green-500 bg-green-50' : 'border-gray-200'
+                      ranch.id === activeRanch?.id ? 'border-green-500 bg-green-50' : 'border-gray-200'
                     }`}
                   >
                     {editingId === ranch.id ? (
@@ -138,7 +127,7 @@ export default function RanchManagementModal({ isOpen, onClose }: RanchManagemen
                               <h3 className="font-semibold text-gray-900">
                                 {ranch.name}
                               </h3>
-                              {ranch.id === activeRanchId && (
+                              {ranch.id === activeRanch?.id && (
                                 <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
                                   Activo
                                 </span>
@@ -150,14 +139,14 @@ export default function RanchManagementModal({ isOpen, onClose }: RanchManagemen
                             </div>
                             {ranch.size && (
                               <p className="text-sm text-gray-500 mt-1">
-                                {ranch.size} hectáreas • {getRanchTypeLabel(ranch.type)}
+                                {ranch.size} {ranch.sizeUnit === 'hectare' ? 'hectáreas' : 'acres'} • {getRanchTypeLabel(ranch.type)}
                               </p>
                             )}
                           </div>
 
                           <div className="flex items-center gap-2">
                             <button
-                              onClick={() => handleToggleActive(ranch.id, ranch.isActive)}
+                              onClick={() => handleToggleActive(ranch.id, ranch.isActive || false)}
                               className={`p-2 rounded-md transition-colors ${
                                 ranch.isActive
                                   ? 'text-green-600 hover:bg-green-100'
@@ -184,7 +173,7 @@ export default function RanchManagementModal({ isOpen, onClose }: RanchManagemen
                               onClick={() => handleDelete(ranch.id, ranch.name)}
                               className="p-2 text-red-600 hover:bg-red-100 rounded-md transition-colors"
                               title="Eliminar"
-                              disabled={ranch.id === activeRanchId}
+                              disabled={ranch.id === activeRanch?.id}
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>

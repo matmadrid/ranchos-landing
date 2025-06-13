@@ -21,19 +21,14 @@ import { useRouter } from "next/navigation";
 import useRanchOSStore from '@/store';
 import { Button } from '@/components/ui/button';
 
-// IMPORTAR EL LOGO ESTÁTICO
-import { 
-  LogoSatellite,  // Logo principal con Satellite
-  LogoHex,        // Opción hexágono
-  LogoTech,       // Opción tech stack
-  LogoCircle,     // Opción círculo
-  LogoLucide      // Opción genérica
-} from '@/components/ui/logo-static';
+// ✅ IMPORTAR EL LOGO ESPECÍFICO PARA HEADER
+import { LogoHeader } from '@/components/ui/logo-header';
 
+// ✅ TRADUCCIONES AL ESPAÑOL (Dashboard se mantiene en inglés)
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
-  { name: 'Analytics', href: '/analytics', icon: BarChart3 },
-  { name: 'Profile', href: '/profile', icon: User },
+  { name: 'Analítica', href: '/analytics', icon: BarChart3 },
+  { name: 'Perfil', href: '/profile', icon: User },
 ];
 
 export default function Header() {
@@ -52,7 +47,8 @@ export default function Header() {
     <header className="sticky top-0 z-50 w-full border-b bg-white/80 backdrop-blur-md">
       <nav className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
-          {/* Logo ESTÁTICO pero con hover effects */}
+          
+          {/* ✅ Logo - Izquierda */}
           <div className="flex items-center">
             <Link href="/" className="flex items-center space-x-2 group">
               <motion.div
@@ -60,17 +56,10 @@ export default function Header() {
                 whileTap={{ scale: 0.95 }}
                 transition={{ duration: 0.2 }}
               >
-                {/* LOGO CON SATELLITE COMO SPACE RANCH */}
-                <LogoSatellite size="md" />
-                
-                {/* Otras opciones disponibles: */}
-                {/* <LogoHex size="md" /> */}
-                {/* <LogoTech size="md" /> */}
-                {/* <LogoCircle size="md" /> */}
-                {/* <LogoLucide size="md" icon="satellite" /> */}
+                <LogoHeader size="md" />
               </motion.div>
               
-              {/* Sparkle effect on hover (mantenido del diseño premium) */}
+              {/* Sparkle effect on hover */}
               <motion.div
                 className="opacity-0 group-hover:opacity-100 transition-opacity"
                 initial={{ scale: 0 }}
@@ -81,8 +70,10 @@ export default function Header() {
             </Link>
           </div>
 
-          {/* Navigation Desktop con animaciones */}
+          {/* ✅ Navigation + User Menu - PEGADOS A LA DERECHA */}
           <div className="hidden md:flex md:items-center md:space-x-6">
+            
+            {/* Navigation Desktop - junto al botón */}
             {navigation.map((item, index) => {
               const isActive = pathname === item.href;
               return (
@@ -119,18 +110,14 @@ export default function Header() {
                 </motion.div>
               );
             })}
-          </div>
 
-          {/* User Menu COMPLETO del header premium */}
-          <div className="hidden md:flex md:items-center md:space-x-4">
-            {/* Sign in button para usuarios no autenticados */}
+            {/* User Menu - al final */}
             {!currentUser ? (
               <Button
                 variant="outline"
                 onClick={() => router.push("/auth/login")}
-                className="ml-4"
               >
-                Sign in
+                Ingresar
               </Button>
             ) : (
               <>
@@ -176,6 +163,7 @@ export default function Header() {
                         exit={{ opacity: 0, y: -10 }}
                         className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border overflow-hidden"
                       >
+                        {/* 🎯 ENLACE CORREGIDO: /profile (no /profile/settings) */}
                         <Link
                           href="/profile"
                           className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
@@ -248,7 +236,7 @@ export default function Header() {
                 );
               })}
               
-              {/* Sign in button en móvil */}
+              {/* ✅ SIGN IN → INGRESAR en móvil */}
               {!currentUser ? (
                 <div className="mt-4 px-3 py-2 border-t pt-4">
                   <Button
@@ -256,7 +244,7 @@ export default function Header() {
                     onClick={() => router.push("/auth/login")}
                     className="w-full"
                   >
-                    Sign in
+                    Ingresar
                   </Button>
                 </div>
               ) : (
@@ -284,6 +272,7 @@ export default function Header() {
                     </div>
                     
                     <div className="space-y-1">
+                      {/* 🎯 ENLACE CORREGIDO EN MÓVIL TAMBIÉN: /profile */}
                       <Link
                         href="/profile"
                         className="flex items-center space-x-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg"

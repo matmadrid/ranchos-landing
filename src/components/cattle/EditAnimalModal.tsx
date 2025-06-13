@@ -1,5 +1,6 @@
 // src/components/cattle/EditAnimalModal.tsx
 'use client';
+import type { Cattle } from '@/types';
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -10,25 +11,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { X, Save, Trash2, AlertTriangle } from 'lucide-react';
 import useRanchOSStore from '@/store'; // CORRECCIÓN: import default
 
-interface Cattle {
-  id: string;
-  tag: string;
-  name?: string;
-  breed: string;
-  sex: 'male' | 'female';
-  birthDate: string;
-  weight?: number;
-  healthStatus: 'excellent' | 'good' | 'fair' | 'poor';
-  location?: string;
-  notes?: string;
-  purchasePrice?: number;
-  purchaseDate?: string;
-  motherId?: string;
-  fatherId?: string;
-  ranchId: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
 
 interface EditAnimalModalProps {
   animal: Cattle;

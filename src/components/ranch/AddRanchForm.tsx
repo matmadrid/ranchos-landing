@@ -11,6 +11,8 @@ interface AddRanchFormProps {
 
 export default function AddRanchForm({ onClose, onSuccess }: AddRanchFormProps) {
   const addRanch = useRanchOSStore((state) => state.addRanch);
+  const currentCountry = useRanchOSStore((state) => state.currentCountry);
+  const unitSystem = useRanchOSStore((state) => state.unitSystem);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -18,7 +20,7 @@ export default function AddRanchForm({ onClose, onSuccess }: AddRanchFormProps) 
     size: '',
     type: 'mixed' as 'dairy' | 'beef' | 'mixed',
     description: '',
-    isActive: true  //
+    isActive: true
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -34,10 +36,12 @@ export default function AddRanchForm({ onClose, onSuccess }: AddRanchFormProps) 
     addRanch({
       name: formData.name,
       location: formData.location,
-      size: formData.size ? parseFloat(formData.size) : undefined,
+      size: formData.size ? parseFloat(formData.size) : 0,
+      countryCode: currentCountry,
+      sizeUnit: unitSystem.area,
       type: formData.type,
       description: formData.description,
-      isActive: true 
+      isActive: true
     });
 
     // Limpiar formulario
@@ -95,14 +99,14 @@ export default function AddRanchForm({ onClose, onSuccess }: AddRanchFormProps) 
           <div>
             <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
               <Trees className="w-4 h-4" />
-              Tamaño (hectáreas)
+              Tamaño ({unitSystem.area === 'hectare' ? 'hectáreas' : 'acres'})
             </label>
             <input
               type="number"
               value={formData.size}
               onChange={(e) => setFormData({ ...formData, size: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-              placeholder="Ej: 100"
+              placeholder="Opcional"
               min="0"
               step="0.1"
             />

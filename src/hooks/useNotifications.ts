@@ -20,10 +20,10 @@ export function useNotifications() {
     byPriority: (priority: NotificationPriority) => store.getNotificationsByPriority(priority),
     byStatus: (status: NotificationStatus) => store.getNotificationsByStatus(status),
     byRanch: (ranchId: string) => store.getNotificationsByRanch(ranchId)
-  }), [notifications, store]);
+  }), [store, notifications]);
 
   // Estadísticas memoizadas
-  const stats = useMemo(() => store.getNotificationStats(), [notifications]);
+  const stats = useMemo(() => store.getNotificationStats(), [store]);
 
   return {
     // Estado

@@ -157,7 +157,8 @@ export default function RegisterPage() {
         name: formData.name,
         email: formData.email,
         ranch: ranches[0]?.name || '',
-        location: ranches[0]?.location || ''
+        location: ranches[0]?.location || '',
+        countryCode: useRanchOSStore.getState().currentCountry
       });
       
       // Marcar onboarding como completo ahora que se registró

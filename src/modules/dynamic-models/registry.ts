@@ -212,8 +212,8 @@ export class BaseDynamicModelLoader {
     try {
       // Dynamic import
       const modulePath = `./modules/dynamic-models/${registryEntry.path}`;
-      const module = await import(modulePath);
-      const ModelClass = module.default || module[registryEntry.code];
+      const moduleImport = await import(modulePath);
+      const ModelClass = moduleImport.default || moduleImport[registryEntry.code];
       
       if (!ModelClass) {
         throw new Error(`Model class not found in ${modulePath}`);

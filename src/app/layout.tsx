@@ -9,15 +9,16 @@ const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'RanchOS - Gestión Ganadera Inteligente',
+  metadataBase: new URL('https://ranchos.io'),
   description: 'Plataforma inteligente para administrar tu rancho con tecnología de punta',
   keywords: 'ganadería, rancho, gestión, ganado, México, administración',
-  authors: [{ name: 'RanchOS Team' }],
+  authors: [{ name: 'TorresLaveaga' }],
   openGraph: {
     title: 'RanchOS - Gestión Ganadera Inteligente',
     description: 'Moderniza tu rancho con nuestra plataforma inteligente',
     type: 'website',
     locale: 'es_MX',
-    url: 'https://ranchos.app',
+    url: 'https://ranchos.io',
     siteName: 'RanchOS',
   },
 }

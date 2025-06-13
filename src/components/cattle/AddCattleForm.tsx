@@ -141,8 +141,7 @@ const COUNTRY_CONFIGS: Record<string, CountryConfig> = {
 export default function AddCattleForm({ onSuccess, hideCancel = false }: AddCattleFormProps) {
   const router = useRouter();
   const addCattle = useRanchOSStore((state) => state.addCattle);
-  const activeRanchId = useRanchOSStore((state) => state.activeRanchId);
-  const activeRanch = useRanchOSStore((state) => state.getActiveRanch());
+  const activeRanch = useRanchOSStore((state) => state.activeRanch);
   
   const [formData, setFormData] = useState({
     tag: '',
@@ -159,7 +158,7 @@ export default function AddCattleForm({ onSuccess, hideCancel = false }: AddCatt
   });
 
   // Si no hay rancho activo, mostrar mensaje
-  if (!activeRanchId || !activeRanch) {
+  if (!activeRanch?.id || !activeRanch) {
     return (
       <div className="text-center py-8">
         <p className="text-gray-600 mb-4">
@@ -182,7 +181,7 @@ export default function AddCattleForm({ onSuccess, hideCancel = false }: AddCatt
     addCattle({
       ...formData,
       weight: formData.weight ? parseFloat(formData.weight) : undefined,
-      ranchId: activeRanchId // Asociar con el rancho activo
+      ranchId: activeRanch?.id // Asociar con el rancho activo
     });
 
     // Limpiar formulario

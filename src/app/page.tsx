@@ -20,10 +20,10 @@ import {
   Zap,
   Users,
   Activity,
-  Cloud
+  Cloud,
+  MapPin
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { LogoSatellite } from '@/components/ui/logo-static';
 
 export default function HomePage() {
   return (
@@ -64,19 +64,13 @@ export default function HomePage() {
             transition={{ duration: 0.6 }}
             className="text-center"
           >
-            {/* Logo */}
-            <motion.div 
-              className="flex justify-center mb-8"
-              whileHover={{ scale: 1.05 }}
-            >
-              <LogoSatellite size="xl" />
-            </motion.div>
-
             {/* Título Principal */}
             <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-gray-900 mb-6">
-              Gestión Ganadera Moderna
               <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-green-600">
-                Simplificada
+                Gestión Ganadera
+              </span>
+              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-green-600">
+                de Síntesis
               </span>
             </h1>
 
@@ -90,19 +84,13 @@ export default function HomePage() {
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                 <Link href="/auth/onboarding">
                   <Button size="lg" className="bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white px-8 py-6 text-lg shadow-lg hover:shadow-xl transition-all duration-300">
-                    Comenzar Gratis
+                    Comenzar 
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
                 </Link>
               </motion.div>
 
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Link href="/auth/login">
-                  <Button size="lg" variant="outline" className="px-8 py-6 text-lg border-2 hover:bg-gray-50 transition-all duration-300">
-                    Iniciar Sesión
-                  </Button>
-                </Link>
-              </motion.div>
+              
             </div>
 
             {/* Badges de confianza */}
@@ -113,16 +101,12 @@ export default function HomePage() {
               transition={{ delay: 0.6 }}
             >
               <div className="flex items-center space-x-2 text-gray-600">
-                <Shield className="h-5 w-5 text-blue-600" />
-                <span>Seguridad bancaria</span>
-              </div>
-              <div className="flex items-center space-x-2 text-gray-600">
                 <Activity className="h-5 w-5 text-green-600" />
                 <span>Análisis en tiempo real</span>
               </div>
               <div className="flex items-center space-x-2 text-gray-600">
-                <Satellite className="h-5 w-5 text-purple-600" />
-                <span>Rastreo satelital</span>
+                <MapPin className="h-5 w-5 text-purple-600" />
+                <span>Trazabilidad</span>
               </div>
             </motion.div>
           </motion.div>
@@ -212,62 +196,8 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Sección de Estadísticas */}
-      <div className="py-16 bg-gradient-to-r from-blue-600 to-green-600">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 text-center">
-            {[
-              { icon: <Users className="h-8 w-8" />, number: '10,000+', label: 'Ganaderos activos' },
-              { icon: <Package className="h-8 w-8" />, number: '50,000+', label: 'Animales registrados' },
-              { icon: <Cloud className="h-8 w-8" />, number: '99.9%', label: 'Disponibilidad' },
-              { icon: <Zap className="h-8 w-8" />, number: '24/7', label: 'Soporte técnico' }
-            ].map((stat, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, scale: 0.8 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-                className="text-white"
-              >
-                <div className="inline-flex p-3 bg-white/20 rounded-full mb-4">
-                  {stat.icon}
-                </div>
-                <div className="text-4xl font-bold mb-2">{stat.number}</div>
-                <div className="text-white/80">{stat.label}</div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* CTA Final */}
-      <div className="py-24 bg-gradient-to-br from-gray-50 to-white">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.6 }}
-          className="mx-auto max-w-4xl text-center px-4 sm:px-6 lg:px-8"
-        >
-          <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-6">
-            ¿Listo para modernizar tu rancho?
-          </h2>
-          <p className="text-xl text-gray-600 mb-10">
-            Únete a miles de ganaderos que ya confían en RanchOS
-          </p>
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <Link href="/auth/onboarding">
-              <Button size="lg" className="bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white px-8 py-6 text-lg shadow-lg hover:shadow-xl transition-all duration-300">
-                Inicia tu prueba gratis
-                <Sparkles className="ml-2 h-5 w-5" />
-              </Button>
-            </Link>
-          </motion.div>
-          
-          <p className="mt-6 text-sm text-gray-500">
-            Sin tarjeta de crédito • Configuración en 3 minutos • Cancela cuando quieras
-          </p>
-        </motion.div>
-      </div>
+      {/* ✅ SECCIONES ELIMINADAS: Estadísticas y CTA Final */}
+      
     </div>
   );
 }

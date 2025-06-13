@@ -7,7 +7,6 @@ export { AlertCard } from './AlertCard';
 export { NotificationSettings } from './NotificationSettings';
 
 // Sistema de toast
-export { ToastComponent, ToastContainer } from '../ui/toast';
 export { NotificationProvider, useNotificationContext } from '../ui/notification-provider';
 
 // Re-exportar hooks para facilitar imports

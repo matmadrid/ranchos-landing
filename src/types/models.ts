@@ -107,7 +107,7 @@ export interface Profile {
 // ===== TIPOS Y ENUMS =====
 
 export type HealthStatus = 'excellent' | 'good' | 'fair' | 'poor';
-export type AnimalStatus = 'healthy' | 'sick' | 'pregnant' | 'sold' | 'quarantine';
+export type AnimalStatus = 'healthy' | 'sick' | 'pregnant' | 'sold' | 'quarantine' | 'deceased';
 export type AnimalSex = 'male' | 'female';
 export type RanchType = 'dairy' | 'beef' | 'mixed' | 'experimental';
 export type MilkPeriod = 'morning' | 'evening' | 'night';
@@ -128,6 +128,8 @@ export const ANIMAL_STATUS_OPTIONS = [
   { value: 'pregnant' as AnimalStatus, label: 'Preñada', icon: '🤰', priority: 3 },
   { value: 'quarantine' as AnimalStatus, label: 'Cuarentena', icon: '⚠️', priority: 4 },
   { value: 'sold' as AnimalStatus, label: 'Vendido', icon: '💰', priority: 2 }
+,
+  { value: 'deceased' as AnimalStatus, label: 'Fallecido', icon: '✝️', priority: 6 }
 ] as const;
 
 // Razas por país

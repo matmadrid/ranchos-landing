@@ -1,7 +1,8 @@
-// src/app/animals/[id]/page.tsx
 'use client';
+// src/app/animals/[id]/page.tsx
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LineChart, Line, AreaChart, Area, ResponsiveContainer, 
@@ -588,11 +589,13 @@ export default function AnimalDetailPage() {
               >
                 <div className="w-32 h-32 rounded-full bg-white p-2 shadow-2xl">
                   {animal.imageUrl ? (
-                    <img 
+                    <Image 
                       src={animal.imageUrl} 
                       alt={animal.name}
                       className="w-full h-full rounded-full object-cover"
-                      onLoad={() => setImageLoading(false)}
+                      onLoadingComplete={() => setImageLoading(false)}
+                      fill
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                     />
                   ) : (
                     <div className="w-full h-full rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center">

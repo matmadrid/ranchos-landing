@@ -4,7 +4,7 @@
 import React, { useState } from 'react';
 import { X, Save, RotateCcw, Clock, Bell } from 'lucide-react';
 import { useNotifications } from '@/hooks/useNotifications';
-import { useStore } from '@/store'; // Para obtener ranchos
+import useRanchOSStore from '@/store'; // Para obtener ranchos
 
 interface NotificationSettingsProps {
   isOpen: boolean;
@@ -13,7 +13,7 @@ interface NotificationSettingsProps {
 
 export function NotificationSettings({ isOpen, onClose }: NotificationSettingsProps) {
   const { settings, updateSettings, resetSettings } = useNotifications();
-  const { ranches } = useStore();
+  const { ranches } = useRanchOSStore();
   
   const [localSettings, setLocalSettings] = useState(settings);
 

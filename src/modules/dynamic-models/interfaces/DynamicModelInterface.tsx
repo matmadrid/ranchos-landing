@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { BaseDynamicModelLoader } from '../registry';
 import { BaseDynamicModel, LocaleConfig, ProcessResult } from '../types/base';
-import { useStore } from '@/store';
+import useRanchOSStore from '@/store';
 
 interface DynamicModelInterfaceProps {
   modelId: string;
@@ -36,7 +36,7 @@ export const DynamicModelInterface: React.FC<DynamicModelInterfaceProps> = ({
   const [activeView, setActiveView] = useState<'spreadsheet' | 'dashboard'>('dashboard');
   const [error, setError] = useState<string | null>(null);
   
-  const { currentUser } = useStore();
+  const { currentUser } = useRanchOSStore();
   
   // Get locale config based on user's country
   const getLocaleConfig = (): LocaleConfig => {
@@ -127,9 +127,6 @@ export const DynamicModelInterface: React.FC<DynamicModelInterfaceProps> = ({
   
   // Load model on mount
   useEffect(() => {
-    loadModel();
-  }, [modelId]);
-  
   const loadModel = async () => {
     try {
       setLoading(true);
@@ -142,6 +139,9 @@ export const DynamicModelInterface: React.FC<DynamicModelInterfaceProps> = ({
       setLoading(false);
     }
   };
+  
+  loadModel();
+}, [modelId]);
   
   const handleProcess = async (data: any) => {
     if (!model) return;

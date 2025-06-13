@@ -1,126 +1,84 @@
-// src/hooks/useToast.tsx
+// src/hooks/useToast.ts
 'use client';
 
-import { toast } from 'sonner';
-import { CheckCircle2, XCircle, AlertCircle, Info } from 'lucide-react';
+import { useState, useCallback } from 'react';
 
-interface ToastOptions {
-  duration?: number;
-  position?: 'top-left' | 'top-center' | 'top-right' | 'bottom-left' | 'bottom-center' | 'bottom-right';
+// Tipos que tu toast.tsx ya espera
+export interface ToastAction {
+  label: string;
+  onClick: () => void;
 }
 
-/**
- * Hook personalizado para mostrar notificaciones toast
- * Usa Sonner para notificaciones modernas y personalizables
- */
+export interface Toast {
+  id: string;
+  type: 'success' | 'error' | 'warning' | 'info';
+  title: string;
+  description?: string;
+  duration?: number;
+  action?: ToastAction;
+  dismissible?: boolean;
+  createdAt: number;
+}
+
+// Hook mínimo que resuelve tu error
 export function useToast() {
-  const success = (title: string, description?: string, options?: ToastOptions) => {
-    toast.success(
-      <div className="flex items-start space-x-3">
-        <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5" />
-        <div>
-          <p className="font-semibold text-gray-900">{title}</p>
-          {description && <p className="text-sm text-gray-600 mt-1">{description}</p>}
-        </div>
-      </div>,
-      {
-        duration: options?.duration || 4000,
-        position: options?.position || 'bottom-right',
-        className: 'bg-white border-green-200',
-      }
-    );
-  };
+  const [toasts, setToasts] = useState<Toast[]>([]);
 
-  const error = (title: string, description?: string, options?: ToastOptions) => {
-    toast.error(
-      <div className="flex items-start space-x-3">
-        <XCircle className="h-5 w-5 text-red-600 mt-0.5" />
-        <div>
-          <p className="font-semibold text-gray-900">{title}</p>
-          {description && <p className="text-sm text-gray-600 mt-1">{description}</p>}
-        </div>
-      </div>,
-      {
-        duration: options?.duration || 5000,
-        position: options?.position || 'bottom-right',
-        className: 'bg-white border-red-200',
-      }
-    );
-  };
+  // Función para generar IDs únicos
+  const generateId = useCallback(() => {
+    return `toast-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  }, []);
 
-  const warning = (title: string, description?: string, options?: ToastOptions) => {
-    toast(
-      <div className="flex items-start space-x-3">
-        <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5" />
-        <div>
-          <p className="font-semibold text-gray-900">{title}</p>
-          {description && <p className="text-sm text-gray-600 mt-1">{description}</p>}
-        </div>
-      </div>,
-      {
-        duration: options?.duration || 4000,
-        position: options?.position || 'bottom-right',
-        className: 'bg-white border-amber-200',
-      }
-    );
-  };
+  // Agregar toast
+  const addToast = useCallback((toast: Omit<Toast, 'id' | 'createdAt'>) => {
+    const id = generateId();
+    const newToast: Toast = {
+      ...toast,
+      id,
+      createdAt: Date.now(),
+      duration: toast.duration ?? (toast.type === 'error' ? 6000 : 4000),
+      dismissible: toast.dismissible !== false,
+    };
 
-  const info = (title: string, description?: string, options?: ToastOptions) => {
-    toast(
-      <div className="flex items-start space-x-3">
-        <Info className="h-5 w-5 text-blue-600 mt-0.5" />
-        <div>
-          <p className="font-semibold text-gray-900">{title}</p>
-          {description && <p className="text-sm text-gray-600 mt-1">{description}</p>}
-        </div>
-      </div>,
-      {
-        duration: options?.duration || 4000,
-        position: options?.position || 'bottom-right',
-        className: 'bg-white border-blue-200',
-      }
-    );
-  };
+    setToasts(prev => [newToast, ...prev].slice(0, 5)); // Máximo 5 toasts
+    return id;
+  }, [generateId]);
 
-  const loading = (title: string, description?: string) => {
-    return toast.loading(
-      <div>
-        <p className="font-semibold text-gray-900">{title}</p>
-        {description && <p className="text-sm text-gray-600 mt-1">{description}</p>}
-      </div>,
-      {
-        position: 'bottom-right',
-      }
-    );
-  };
+  // Remover toast
+  const removeToast = useCallback((id: string) => {
+    setToasts(prev => prev.filter(toast => toast.id !== id));
+  }, []);
 
-  const dismiss = (toastId?: string | number) => {
-    if (toastId) {
-      toast.dismiss(toastId);
-    } else {
-      toast.dismiss();
-    }
-  };
+  // Limpiar todos
+  const clearAllToasts = useCallback(() => {
+    setToasts([]);
+  }, []);
 
-  const promise = <T,>(
-    promise: Promise<T>,
-    msgs: {
-      loading: string;
-      success: string | ((data: T) => string);
-      error: string | ((error: any) => string);
-    }
-  ) => {
-    return toast.promise(promise, msgs);
-  };
+  // Métodos de conveniencia (lo que tu login page necesita)
+  const success = useCallback((title: string, description?: string) => {
+    return addToast({ type: 'success', title, description });
+  }, [addToast]);
+
+  const error = useCallback((title: string, description?: string) => {
+    return addToast({ type: 'error', title, description });
+  }, [addToast]);
+
+  const warning = useCallback((title: string, description?: string) => {
+    return addToast({ type: 'warning', title, description });
+  }, [addToast]);
+
+  const info = useCallback((title: string, description?: string) => {
+    return addToast({ type: 'info', title, description });
+  }, [addToast]);
 
   return {
-    success,
-    error,
+    toasts,
+    addToast,
+    removeToast,
+    clearAllToasts,
+    success,  // ✅ Esto es lo que necesita tu login page
+    error,    // ✅ Y esto también
     warning,
     info,
-    loading,
-    dismiss,
-    promise,
-    toast: toast.custom, // Para toasts personalizados
   };
 }

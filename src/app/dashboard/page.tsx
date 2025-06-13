@@ -4,6 +4,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import useRanchOSStore from '@/store';
+import type { Animal } from '@/types';
 import { UserProfilePrompt } from '@/components/dashboard/UserProfilePrompt';
 import EditAnimalModal from '@/components/cattle/EditAnimalModal';
 import { Button } from '@/components/ui/button';
@@ -36,17 +37,6 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 
 // 🎨 TIPOS
-interface Animal {
-  id: string;
-  tag: string;
-  name?: string;
-  breed?: string;
-  sex: 'male' | 'female';
-  birthDate?: string;
-  weight?: number;
-  healthStatus?: 'excellent' | 'good' | 'fair' | 'poor';
-  ranchId: string;
-}
 
 // 🎨 COMPONENTE: KPI Card Premium
 const KPICard = ({ 

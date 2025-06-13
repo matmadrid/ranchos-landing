@@ -38,7 +38,7 @@ export default function StepProfile({ data, onUpdate, onNext, onBack }: StepProf
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [formData, touched]);
+  }, [formData, touched, onUpdate]);
 
   const validateField = (field: string, value: string) => {
     const newErrors = { ...errors };

@@ -23,3 +23,22 @@ logs/
 # Build
 dist/
 build/
+
+# Next.js
+.next/
+.next/*
+*.tsbuildinfo
+out/
+
+# Vercel
+.vercel
+
+# Next.js cache
+.next/cache/
+
+# Testing
+coverage/
+.next/
+.next/*
+.next/
+.next/*

@@ -265,7 +265,7 @@ export default function StepSuccess({ data, onComplete }: StepSuccessProps) {
         transition={{ delay: 1.2 }}
       >
         <p className="text-gray-700 italic">
-          "El éxito en la ganadería comienza con un buen sistema de gestión"
+          &ldquo;El éxito en la ganadería comienza con un buen sistema de gestión&ldquo;
         </p>
         <p className="text-sm text-gray-500 mt-2">
           - Equipo RanchOS

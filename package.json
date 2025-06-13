@@ -11,7 +11,9 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "fix-models": "./fix-all-models.sh"
+    "fix-models": "./fix-all-models.sh",
+    "verify:store": "tsx src/scripts/verify-processing-result.ts",
+    "test:processing": "NODE_ENV=test npm run verify:store"
   },
   "dependencies": {
     "@prisma/client": "^6.9.0",
@@ -70,6 +72,7 @@
     "eslint": "^8.50.0",
     "eslint-config-next": "14.0.0",
     "jest": "^29.7.0",
-    "postcss": "^8.4.38"
+    "postcss": "^8.4.38",
+    "tsx": "^4.20.2"
   }
 }

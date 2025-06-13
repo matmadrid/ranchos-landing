@@ -1,7 +1,7 @@
 // src/app/analytics/page.tsx
 'use client';
 
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, 
@@ -308,15 +308,6 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-// ✅ Mock cattle data moved outside component for ESLint compliance
-const MOCK_CATTLE_DATA: Animal[] = [
-  { id: '1', tag: 'A001', name: 'Bella', breed: 'Holstein', sex: 'female', weight: 500, healthStatus: 'excellent' },
-  { id: '2', tag: 'A002', name: 'Luna', breed: 'Jersey', sex: 'female', weight: 450, healthStatus: 'good' },
-  { id: '3', tag: 'A003', name: 'Toro', breed: 'Angus', sex: 'male', weight: 700, healthStatus: 'excellent' },
-  { id: '4', tag: 'A004', name: 'Daisy', breed: 'Holstein', sex: 'female', weight: 520, healthStatus: 'fair' },
-  { id: '5', tag: 'A005', name: 'Max', breed: 'Angus', sex: 'male', weight: 680, healthStatus: 'good' },
-];
-
 // 🚀 MAIN COMPONENT: Analytics Page Premium
 export default function AnalyticsPage() {
   // Mock data
@@ -327,11 +318,17 @@ export default function AnalyticsPage() {
   const [dateRange, setDateRange] = useState('7days');
   const [activeTab, setActiveTab] = useState('overview');
 
-  // ✅ Mock cattle data (moved outside for ESLint compliance)
-  const cattle = MOCK_CATTLE_DATA;
+  // Mock cattle data
+  const cattle: Animal[] = [
+    { id: '1', tag: 'A001', name: 'Bella', breed: 'Holstein', sex: 'female', weight: 500, healthStatus: 'excellent' },
+    { id: '2', tag: 'A002', name: 'Luna', breed: 'Jersey', sex: 'female', weight: 450, healthStatus: 'good' },
+    { id: '3', tag: 'A003', name: 'Toro', breed: 'Angus', sex: 'male', weight: 700, healthStatus: 'excellent' },
+    { id: '4', tag: 'A004', name: 'Daisy', breed: 'Holstein', sex: 'female', weight: 520, healthStatus: 'fair' },
+    { id: '5', tag: 'A005', name: 'Max', breed: 'Angus', sex: 'male', weight: 680, healthStatus: 'good' },
+  ];
 
-  // ✅ Generate mock production data with proper useCallback
-  const generateProductionData = useCallback(() => {
+  // Generate mock production data
+  const generateProductionData = () => {
     const data = [];
     const today = new Date();
     
@@ -348,10 +345,9 @@ export default function AnalyticsPage() {
       });
     }
     return data;
-  }, [productionDays]); // ✅ Proper dependency array
+  };
 
-  // ✅ useMemo with correct dependency
-  const productionData = useMemo(() => generateProductionData(), [generateProductionData]);
+  const productionData = useMemo(() => generateProductionData(), [productionDays]);
 
   // Calculate statistics
   const stats = useMemo(() => {

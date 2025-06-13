@@ -9,21 +9,14 @@ regulations: string[];
 taxRules: TaxRules;
 }
 export interface ValidationResult {
-  isValid: boolean;
-  errors: ValidationError[];
-  warnings: ValidationWarning[];
-  metadata?: {
-    validatedAt: string;
-    validatorVersion: string;
-    country: string;
-    regulations?: any[];
-  };
+isValid: boolean;
+errors: ValidationError[];
+warnings: ValidationWarning[];
 }
 export interface ValidationError {
 code: string;
 message: string;
 field: string | null;
-  severity: 'error' | 'warning' | 'info';
 }
 export interface ValidationWarning {
 code: string;
@@ -69,11 +62,9 @@ veterinaryCost: number;
 infrastructureCost: number;
 otherCosts: number;
 animalCount: number;
-operationType?: 'dairy' | 'beef' | 'mixed';
 averageWeight: number;
 mortalityRate: number;
 currency: string;
-locale?: string;
 weightUnit: string;
 weights: number[];
 prices: number[];
@@ -91,8 +82,6 @@ metadata: {
 calculatedAt: Date;
 locale: string;
 currency: string;
-  analysisId?: string;
-  version?: string;
 };
 }
 export interface CostStructure {
@@ -113,15 +102,3 @@ period: string;
 value: number;
 confidence: number;
 }
-
-// Exportar modelos
-export type {
-  Animal,
-  Cattle,
-  MilkProduction,
-  AnimalSex,
-  AnimalStatus,
-  HealthStatus,
-  MilkPeriod,
-  MilkQuality
-} from './models';

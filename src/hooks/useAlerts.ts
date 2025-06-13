@@ -1,12 +1,12 @@
 // src/hooks/useAlerts.ts
 import { useCallback, useEffect } from 'react';
 import { useNotificationStore } from '@/store/notifications';
-import { useStore } from '@/store'; // Store principal del ganado
+import useRanchOSStore from '@/store'; // Store principal del ganado
 import { NotificationPriority, HealthNotification, ProductionNotification } from '@/lib/notification-types';
 
 export function useAlerts() {
   const notificationStore = useNotificationStore();
-  const mainStore = useStore();
+  const mainStore = useRanchOSStore();
 
   // Función para crear alerta de salud
   const createHealthAlert = useCallback((cattleId: string, newStatus: string, previousStatus?: string) => {
@@ -88,7 +88,7 @@ export function useAlerts() {
 
     // Verificar alertas de producción
     const activeRanchCattle = mainStore.cattle.filter(c => 
-      c.ranchId === mainStore.activeRanchId && c.sex === 'female'
+      c.ranchId === mainStore.activeRanch?.id && c.sex === 'female'
     );
 
     activeRanchCattle.forEach(cattle => {

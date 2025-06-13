@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { X, Milk, Calendar, AlertCircle } from 'lucide-react';
-import { useStore } from '@/store';
+import useRanchOSStore from '@/store';
 
 interface MilkProductionModalProps {
   isOpen: boolean;
@@ -18,9 +18,9 @@ interface ProductionEntry {
 
 export default function MilkProductionModal({ isOpen, onClose }: MilkProductionModalProps) {
   // Separar las llamadas al store
-  const getActiveCattle = useStore((state) => state.getActiveCattle);
-  const addMilkProduction = useStore((state) => state.addMilkProduction);
-  const activeRanchId = useStore((state) => state.activeRanchId);
+  const activeRanch = useRanchOSStore((state) => state.activeRanch);
+  const getCattleByRanch = useRanchOSStore((state) => state.getCattleByRanch);
+  const addMilkProduction = useRanchOSStore((state) => state.addMilkProduction);
   
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [shift, setShift] = useState<'morning' | 'afternoon' | 'evening'>('morning');
@@ -31,10 +31,10 @@ export default function MilkProductionModal({ isOpen, onClose }: MilkProductionM
   // Obtener el ganado cuando se abre el modal
   useEffect(() => {
     if (isOpen) {
-      const activeCattle = getActiveCattle();
+      const activeCattle = getCattleByRanch(activeRanch?.id || '');
       setCattle(activeCattle);
     }
-  }, [isOpen, getActiveCattle]);
+  }, [isOpen, getCattleByRanch, activeRanch]);
 
   // Solo mostrar vacas hembra
   const femaleCattle = cattle.filter(c => c.sex === 'female');
@@ -50,7 +50,7 @@ export default function MilkProductionModal({ isOpen, onClose }: MilkProductionM
         }))
       );
     }
-  }, [isOpen, shift, femaleCattle.length]);
+  }, [isOpen, shift, femaleCattle]);
 
   if (!isOpen) return null;
 
@@ -64,7 +64,7 @@ export default function MilkProductionModal({ isOpen, onClose }: MilkProductionM
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!activeRanchId) {
+    if (!activeRanch?.id) {
       alert('No hay rancho activo');
       return;
     }
@@ -80,11 +80,11 @@ export default function MilkProductionModal({ isOpen, onClose }: MilkProductionM
     // Guardar cada producción
     validProductions.forEach(prod => {
       addMilkProduction({
-        cattleId: prod.cattleId,
-        ranchId: activeRanchId,
+        animalId: prod.cattleId,
         date,
-        liters: prod.liters,
-        shift,
+        quantity: prod.liters,
+        period: shift,
+        unit: 'liter',
         notes: globalNotes
       });
     });
