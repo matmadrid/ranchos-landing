@@ -4,6 +4,7 @@
   "description": "Dynamic Systems Operating System - The Future of Complex Decision Making",
   "private": true,
   "scripts": {
+    "vercel": "next build",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
@@ -39,7 +40,7 @@
     "jspdf": "^3.0.1",
     "jspdf-autotable": "^5.0.2",
     "lucide-react": "^0.290.0",
-    "next": "14.2.5",
+    "next": "^14.2.30",
     "papaparse": "^5.4.1",
     "pdfkit": "^0.13.0",
     "react": "18.2.0",
@@ -52,7 +53,6 @@
     "tailwindcss": "^3.3.0",
     "tailwindcss-animate": "^1.0.7",
     "typescript": "^5.2.2",
-    "xlsx": "^0.18.5",
     "zustand": "^5.0.5"
   },
   "devDependencies": {
