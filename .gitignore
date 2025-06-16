@@ -34,8 +34,4 @@ yarn-error.log*
 next-env.d.ts
 
 # backups
-*.backup
-*.backup2
-*.backup3
-*.backup4
-.next/cache/
+*.backup*
