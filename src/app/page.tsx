@@ -24,6 +24,7 @@ import {
   MapPin
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { WaitlistWidget } from '@/components/ui/waitlist-widget';
 
 export default function HomePage() {
   return (
@@ -76,13 +77,14 @@ export default function HomePage() {
 
             {/* Subtítulo */}
             <p className="mx-auto max-w-2xl text-xl sm:text-2xl text-gray-600 mb-10">
-              Rastrea tu ganado, analiza el rendimiento y optimiza operaciones con nuestra plataforma inteligente diseñada para el ganadero moderno.
+              Mejora tu operación, comprende el rendimiento y toma mejores decisiones con una herramienta diseñada para el rancho.
+
             </p>
 
             {/* Botones CTA */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Link href="/auth/onboarding">
+                <Link href="/waitlist">
                   <Button size="lg" className="bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white px-8 py-6 text-lg shadow-lg hover:shadow-xl transition-all duration-300">
                     Comenzar 
                     <ArrowRight className="ml-2 h-5 w-5" />
@@ -198,6 +200,7 @@ export default function HomePage() {
 
       {/* ✅ SECCIONES ELIMINADAS: Estadísticas y CTA Final */}
       
+      <WaitlistWidget />
     </div>
   );
 }

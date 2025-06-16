@@ -1,9 +1,11 @@
+import Script from "next/script";
 // src/app/layout.tsx
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { Toaster } from 'sonner'
 import Header from '@/components/layout/Header'
+import SystemVerifier from "@/components/debug/SystemVerifier"
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -43,6 +45,7 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body className={inter.className}>
+    <Script src="/emergency-stop.js" strategy="beforeInteractive" />
         {/* Header principal */}
         <Header />
         
@@ -69,6 +72,7 @@ export default function RootLayout({
             className: 'ranch-toast',
           }}
         />
+        {/* process.env.NODE_ENV === "development" && <SystemVerifier /> */}
       </body>
     </html>
   )

@@ -1,0 +1,626 @@
+// jest.setup.ts
+/**
+ * @version 2.0.0 - Enterprise Testing Foundation
+ * @author TorresLaveaga
+ * @cosmovision SpaceRanch Sistemas Dinámicos Universales
+ * 
+ * 🏗️ ARQUITECTURA MODULAR DE TESTING RANCHOS
+ * 
+ * Este setup está diseñado para escalar con las 19 batallas del roadmap RanchOS:
+ * - ✅ Fase 1 (Batallas 6-8): Núcleo Operacional [IMPLEMENTADO]
+ * - 🔜 Fase 2 (Batallas 9-11): Inteligencia Financiera [PREPARADO]
+ * - 🔜 Fase 3-6: Planificación, IA, IoT, Marketplace [ARQUITECTURA LISTA]
+ * 
+ * Ver documentación completa en: /docs/testing/TESTING-ARCHITECTURE.md
+ */
+
+/// <reference types="jest" />
+import '@testing-library/jest-dom';
+
+// ===================================================================
+// 🔧 CONFIGURACIÓN BASE (PRESERVADA DE VERSIÓN ANTERIOR)
+// ===================================================================
+
+// Declarar tipo para global.sleep
+declare global {
+  var sleep: (ms: number) => Promise<void>;
+  
+  // 🆕 Extensiones enterprise para testing
+  var mockRanchOSCountry: (country: CountryCode) => void;
+  var mockRanchOSFeatureFlags: (flags: Partial<FeatureFlags>) => void;
+  var mockRanchOSPerformance: (config: PerformanceConfig) => void;
+  var resetRanchOSMocks: () => void;
+}
+
+// Mock de window.matchMedia (PRESERVADO)
+Object.defineProperty(window, 'matchMedia', {
+  writable: true,
+  value: jest.fn().mockImplementation(query => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: jest.fn(), // deprecated
+    removeListener: jest.fn(), // deprecated
+    addEventListener: jest.fn(),
+    removeEventListener: jest.fn(),
+    dispatchEvent: jest.fn(),
+  })),
+});
+
+// Mock de IntersectionObserver (PRESERVADO)
+global.IntersectionObserver = class IntersectionObserver {
+  constructor() {}
+  disconnect() {}
+  observe() {}
+  unobserve() {}
+} as any;
+
+// Mock de ResizeObserver (PRESERVADO)
+global.ResizeObserver = class ResizeObserver {
+  constructor() {}
+  disconnect() {}
+  observe() {}
+  unobserve() {}
+} as any;
+
+// ===================================================================
+// 🌍 MÓDULO MULTI-COUNTRY TESTING
+// ===================================================================
+
+type CountryCode = 'MX' | 'CO' | 'BR' | 'ES';
+
+interface CountryConfig {
+  currency: string;
+  locale: string;
+  regulations: string[];
+  units: 'metric' | 'mixed';
+  taxSystem: string;
+  bankingMocks: {
+    accountFormats: string[];
+    paymentMethods: string[];
+  };
+}
+
+const COUNTRY_CONFIGS: Record<CountryCode, CountryConfig> = {
+  MX: {
+    currency: 'MXN',
+    locale: 'es-MX', 
+    regulations: ['SENASICA', 'SINIIGA'],
+    units: 'metric',
+    taxSystem: 'MexicanTaxSystem',
+    bankingMocks: {
+      accountFormats: ['CLABE', 'Card'],
+      paymentMethods: ['SPEI', 'Cash', 'Transfer']
+    }
+  },
+  CO: {
+    currency: 'COP',
+    locale: 'es-CO',
+    regulations: ['ICA', 'SINIGAN'], 
+    units: 'metric',
+    taxSystem: 'ColombianTaxSystem',
+    bankingMocks: {
+      accountFormats: ['AccountNumber', 'Card'],
+      paymentMethods: ['PSE', 'Cash', 'Transfer']
+    }
+  },
+  BR: {
+    currency: 'BRL',
+    locale: 'pt-BR',
+    regulations: ['SISBOV', 'MAPA'],
+    units: 'mixed', // kg + arroba
+    taxSystem: 'BrazilianTaxSystem', 
+    bankingMocks: {
+      accountFormats: ['CPF', 'CNPJ', 'PIX'],
+      paymentMethods: ['PIX', 'TED', 'DOC', 'Cash']
+    }
+  },
+  ES: {
+    currency: 'EUR',
+    locale: 'es-ES',
+    regulations: ['EU', 'SITRAN'],
+    units: 'metric',
+    taxSystem: 'SpanishTaxSystem',
+    bankingMocks: {
+      accountFormats: ['IBAN', 'Card'],
+      paymentMethods: ['SEPA', 'Cash', 'Transfer']
+    }
+  }
+};
+
+// ===================================================================
+// 🎛️ MÓDULO FEATURE FLAGS TESTING 
+// ===================================================================
+
+interface FeatureFlags {
+  // Fase 1 - Núcleo Operacional
+  ENABLE_INVENTORY: boolean;           // Batalla 6 ✅
+  ENABLE_WEIGHT_TRACKING: boolean;     // Batalla 7 🔜
+  ENABLE_PRODUCTION_DASHBOARD: boolean;// Batalla 8 🔜
+  
+  // Fase 2 - Inteligencia Financiera  
+  ENABLE_PROFIT_ENGINE: boolean;       // Batalla 9 🔜
+  ENABLE_FEED_OPTIMIZER: boolean;      // Batalla 10 🔜
+  ENABLE_CASHFLOW_GUARDIAN: boolean;   // Batalla 11 🔜
+  
+  // Fase 3 - Planificación Estratégica
+  ENABLE_BUDGET_MASTER: boolean;       // Batalla 12 🔜
+  ENABLE_PERFORMANCE_ANALYZER: boolean;// Batalla 13 🔜
+  
+  // Fase 4 - Optimización Avanzada
+  ENABLE_SPECIALIZED_CALCS: boolean;   // Batalla 14 🔜
+  ENABLE_INFRASTRUCTURE_MGMT: boolean; // Batalla 15 🔜
+  
+  // Fase 5 - Inteligencia Artificial
+  ENABLE_AI_PREDICTIONS: boolean;      // Batalla 16 🔜
+  ENABLE_RECOMMENDATION_ENGINE: boolean;// Batalla 17 🔜
+  
+  // Fase 6 - Ecosistema Conectado
+  ENABLE_IOT_INTEGRATION: boolean;     // Batalla 18 🔜
+  ENABLE_MARKETPLACE: boolean;         // Batalla 19 🔜
+  
+  // Testing & Debug
+  ENABLE_DEBUG_TOOLS: boolean;
+  ENABLE_PERFORMANCE_MONITORING: boolean;
+}
+
+const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
+  // Solo Fase 1 activa por defecto
+  ENABLE_INVENTORY: true,
+  ENABLE_WEIGHT_TRACKING: false,
+  ENABLE_PRODUCTION_DASHBOARD: false,
+  
+  // Fase 2-6 desactivadas por defecto
+  ENABLE_PROFIT_ENGINE: false,
+  ENABLE_FEED_OPTIMIZER: false,
+  ENABLE_CASHFLOW_GUARDIAN: false,
+  ENABLE_BUDGET_MASTER: false,
+  ENABLE_PERFORMANCE_ANALYZER: false,
+  ENABLE_SPECIALIZED_CALCS: false,
+  ENABLE_INFRASTRUCTURE_MGMT: false,
+  ENABLE_AI_PREDICTIONS: false,
+  ENABLE_RECOMMENDATION_ENGINE: false,
+  ENABLE_IOT_INTEGRATION: false,
+  ENABLE_MARKETPLACE: false,
+  
+  // Testing habilitado
+  ENABLE_DEBUG_TOOLS: true,
+  ENABLE_PERFORMANCE_MONITORING: true,
+};
+
+// ===================================================================
+// 📈 MÓDULO PERFORMANCE TESTING
+// ===================================================================
+
+interface PerformanceConfig {
+  simulateLatency: boolean;
+  maxLatencyMs: number;
+  simulateLargeDatasets: boolean;
+  maxAnimals: number;
+  enableMemoryTracking: boolean;
+  simulateNetworkFailures: boolean;
+  failureRate: number; // 0.0 - 1.0
+}
+
+const DEFAULT_PERFORMANCE_CONFIG: PerformanceConfig = {
+  simulateLatency: false,
+  maxLatencyMs: 100,
+  simulateLargeDatasets: false, 
+  maxAnimals: 1000, // Por defecto moderado
+  enableMemoryTracking: false,
+  simulateNetworkFailures: false,
+  failureRate: 0.05 // 5% de fallos
+};
+
+// ===================================================================
+// 🏦 MÓDULO EXTERNAL SERVICES MOCKING
+// ===================================================================
+
+// Banking APIs Mock
+const createBankingMock = (country: CountryCode) => {
+  const config = COUNTRY_CONFIGS[country];
+  
+  return {
+    getBalance: jest.fn().mockResolvedValue({
+      amount: 150000,
+      currency: config.currency,
+      accountType: 'CHECKING'
+    }),
+    
+    getTransactions: jest.fn().mockResolvedValue([
+      {
+        id: 'tx-001',
+        amount: -5000,
+        description: 'Compra de alimento',
+        date: new Date().toISOString(),
+        type: 'PAYMENT'
+      }
+    ]),
+    
+    makePayment: jest.fn().mockImplementation(async (payment) => {
+      await new Promise(resolve => setTimeout(resolve, 200)); // Simular latencia
+      return {
+        transactionId: `tx-${Date.now()}`,
+        status: 'SUCCESS',
+        confirmationCode: `CONF-${Math.random().toString(36).substr(2, 9)}`
+      };
+    })
+  };
+};
+
+// IoT Devices Mock
+const createIoTMock = () => ({
+  weightSensors: {
+    getReading: jest.fn().mockResolvedValue({
+      animalId: 'ANI-001',
+      weight: 450.5,
+      timestamp: new Date().toISOString(),
+      sensorId: 'SCALE-001',
+      batteryLevel: 85
+    }),
+    
+    calibrate: jest.fn().mockResolvedValue({ success: true }),
+    
+    getStatus: jest.fn().mockResolvedValue({
+      online: true,
+      lastHeartbeat: new Date().toISOString(),
+      batteryLevel: 85
+    })
+  },
+  
+  weatherStation: {
+    getCurrentWeather: jest.fn().mockResolvedValue({
+      temperature: 24.5,
+      humidity: 65,
+      windSpeed: 12,
+      precipitation: 0,
+      timestamp: new Date().toISOString()
+    }),
+    
+    getForecast: jest.fn().mockResolvedValue([
+      { date: '2025-06-16', tempMin: 18, tempMax: 28, precipitation: 10 },
+      { date: '2025-06-17', tempMin: 20, tempMax: 30, precipitation: 0 }
+    ])
+  }
+});
+
+// Weather Services Mock  
+const createWeatherMock = () => ({
+  getCurrentWeather: jest.fn().mockResolvedValue({
+    location: 'Mexicali, BC',
+    temperature: 32,
+    humidity: 45,
+    windSpeed: 15,
+    conditions: 'Sunny'
+  }),
+  
+  getExtendedForecast: jest.fn().mockResolvedValue({
+    daily: Array.from({ length: 7 }, (_, i) => ({
+      date: new Date(Date.now() + i * 24 * 60 * 60 * 1000).toISOString(),
+      tempMin: 18 + Math.random() * 5,
+      tempMax: 28 + Math.random() * 8, 
+      precipitation: Math.random() * 20
+    }))
+  })
+});
+
+// ===================================================================
+// 🤖 MÓDULO AI/ML MOCKING
+// ===================================================================
+
+const createAIMock = () => ({
+  predictions: {
+    predictAnimalWeight: jest.fn().mockImplementation(async (animalData) => {
+      await new Promise(resolve => setTimeout(resolve, 100)); // Simular procesamiento ML
+      return {
+        predictedWeight: animalData.currentWeight + (Math.random() * 20 - 10), // ±10kg variation
+        confidence: 0.85 + Math.random() * 0.1, // 85-95% confidence
+        factors: ['age', 'breed', 'nutrition', 'genetics'],
+        timestamp: new Date().toISOString()
+      };
+    }),
+    
+    optimizeFeedMix: jest.fn().mockResolvedValue({
+      recommendedMix: [
+        { ingredient: 'Corn', percentage: 45 },
+        { ingredient: 'Soybean Meal', percentage: 25 },
+        { ingredient: 'Wheat Bran', percentage: 20 },
+        { ingredient: 'Supplements', percentage: 10 }
+      ],
+      costPerKg: 2.35,
+      expectedGainPerDay: 1.2,
+      confidence: 0.92
+    }),
+    
+    detectAnomalies: jest.fn().mockResolvedValue({
+      anomalies: [],
+      riskLevel: 'LOW',
+      recommendations: ['Continue current feeding schedule']
+    })
+  }
+});
+
+// ===================================================================
+// 💾 ENHANCED LOCALSTORAGE MOCK (MEJORADO)
+// ===================================================================
+
+const createEnhancedLocalStorageMock = () => {
+  let store: Record<string, string> = {};
+  const STORAGE_LIMIT = 5 * 1024 * 1024; // 5MB
+  let performanceConfig = DEFAULT_PERFORMANCE_CONFIG;
+  
+  const getCurrentSize = (): number => {
+    return Object.entries(store).reduce((totalSize, [key, value]) => {
+      return totalSize + (key.length + value.length) * 2; // UTF-16
+    }, 0);
+  };
+
+  const checkQuotaExceeded = (key: string, value: string): void => {
+    const currentSize = getCurrentSize();
+    const newItemSize = (key.length + value.length) * 2;
+    const existingValue = store[key];
+    const sizeDifference = existingValue 
+      ? newItemSize - (existingValue.length * 2)
+      : newItemSize;
+    
+    if (currentSize + sizeDifference > STORAGE_LIMIT) {
+      const error = new Error('QuotaExceededError: DOM Exception 22');
+      error.name = 'QuotaExceededError';
+      throw error;
+    }
+  };
+  
+  const simulateLatency = async (): Promise<void> => {
+    if (performanceConfig.simulateLatency) {
+      const latency = Math.random() * performanceConfig.maxLatencyMs;
+      await new Promise(resolve => setTimeout(resolve, latency));
+    }
+  };
+
+  const mockLocalStorage = {
+    getItem: jest.fn(async (key: string): Promise<string | null> => {
+      await simulateLatency();
+      return store[key] || null;
+    }),
+
+    setItem: jest.fn(async (key: string, value: string): Promise<void> => {
+      await simulateLatency();
+      const stringValue = String(value);
+      checkQuotaExceeded(key, stringValue);
+      store[key] = stringValue;
+    }),
+
+    removeItem: jest.fn(async (key: string): Promise<void> => {
+      await simulateLatency();
+      delete store[key];
+    }),
+
+    clear: jest.fn(async (): Promise<void> => {
+      await simulateLatency();
+      store = {};
+    }),
+
+    get length(): number {
+      return Object.keys(store).length;
+    },
+
+    key: jest.fn((index: number): string | null => {
+      const keys = Object.keys(store);
+      return keys[index] || null;
+    }),
+
+    // Utilidades para testing
+    __getStore: () => ({ ...store }),
+    __setStore: (newStore: Record<string, string>) => { store = { ...newStore }; },
+    __getCurrentSize: getCurrentSize,
+    __getStorageLimit: () => STORAGE_LIMIT,
+    __setPerformanceConfig: (config: Partial<PerformanceConfig>) => {
+      performanceConfig = { ...performanceConfig, ...config };
+    },
+    
+    // Simulación de datasets grandes
+    __generateLargeDataset: (animals: number = 10000) => {
+      if (!performanceConfig.simulateLargeDatasets) return;
+      
+      const largeDataset = Array.from({ length: animals }, (_, i) => ({
+        id: `ANI-${String(i).padStart(6, '0')}`,
+        tag: `TAG-${i}`,
+        breed: 'Charolais',
+        weight: 400 + Math.random() * 200,
+        birthDate: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000).toISOString()
+      }));
+      
+      try {
+        store['test_large_dataset'] = JSON.stringify(largeDataset);
+      } catch (error) {
+        console.warn('Dataset too large for storage limit:', error);
+      }
+    }
+  };
+
+  return mockLocalStorage;
+};
+
+// Crear instancia del mock mejorado
+const enhancedLocalStorageMock = createEnhancedLocalStorageMock();
+
+Object.defineProperty(window, 'localStorage', {
+  value: enhancedLocalStorageMock,
+  writable: true
+});
+
+// ===================================================================
+// 🌐 FUNCIONES GLOBALES PARA TESTING
+// ===================================================================
+
+let currentCountry: CountryCode = 'MX';
+let currentFeatureFlags: FeatureFlags = { ...DEFAULT_FEATURE_FLAGS };
+let currentPerformanceConfig: PerformanceConfig = { ...DEFAULT_PERFORMANCE_CONFIG };
+
+// Mocks de servicios externos
+let bankingMock = createBankingMock('MX');
+let iotMock = createIoTMock();
+let weatherMock = createWeatherMock();
+let aiMock = createAIMock();
+
+globalThis.mockRanchOSCountry = (country: CountryCode) => {
+  currentCountry = country;
+  bankingMock = createBankingMock(country);
+  
+  // Simular cambio de configuración regional
+  process.env.NEXT_PUBLIC_DEFAULT_COUNTRY = country;
+  process.env.NEXT_PUBLIC_DEFAULT_CURRENCY = COUNTRY_CONFIGS[country].currency;
+  process.env.NEXT_PUBLIC_DEFAULT_LOCALE = COUNTRY_CONFIGS[country].locale;
+};
+
+globalThis.mockRanchOSFeatureFlags = (flags: Partial<FeatureFlags>) => {
+  currentFeatureFlags = { ...currentFeatureFlags, ...flags };
+  
+  // Aplicar feature flags como variables de entorno
+  Object.entries(flags).forEach(([key, value]) => {
+    process.env[`NEXT_PUBLIC_${key}`] = String(value);
+  });
+};
+
+globalThis.mockRanchOSPerformance = (config: PerformanceConfig) => {
+  currentPerformanceConfig = { ...currentPerformanceConfig, ...config };
+  enhancedLocalStorageMock.__setPerformanceConfig(config);
+  
+  if (config.simulateLargeDatasets) {
+    enhancedLocalStorageMock.__generateLargeDataset(config.maxAnimals);
+  }
+};
+
+globalThis.resetRanchOSMocks = () => {
+  // Reset country
+  currentCountry = 'MX';
+  bankingMock = createBankingMock('MX');
+  
+  // Reset feature flags  
+  currentFeatureFlags = { ...DEFAULT_FEATURE_FLAGS };
+  
+  // Reset performance
+  currentPerformanceConfig = { ...DEFAULT_PERFORMANCE_CONFIG };
+  enhancedLocalStorageMock.__setPerformanceConfig(DEFAULT_PERFORMANCE_CONFIG);
+  
+  // Reset storage
+  enhancedLocalStorageMock.clear();
+  
+  // Reset all mocks
+  jest.clearAllMocks();
+  
+  // Reset env vars
+  delete process.env.NEXT_PUBLIC_DEFAULT_COUNTRY;
+  delete process.env.NEXT_PUBLIC_DEFAULT_CURRENCY;
+  delete process.env.NEXT_PUBLIC_DEFAULT_LOCALE;
+};
+
+// ===================================================================
+// 🎛️ CONFIGURACIÓN DE CONSOLE (PRESERVADA)
+// ===================================================================
+
+const originalError = console.error;
+const originalWarn = console.warn;
+const originalLog = console.log;
+
+beforeAll(() => {
+  console.error = (...args: any[]) => {
+    if (
+      typeof args[0] === 'string' &&
+      (args[0].includes('Warning: ReactDOM.render') ||
+       args[0].includes('Warning: `ReactDOMTestUtils.act`'))
+    ) {
+      return;
+    }
+    originalError.call(console, ...args);
+  };
+
+  console.warn = (...args: any[]) => {
+    if (
+      typeof args[0] === 'string' &&
+      args[0].includes('componentWillReceiveProps')
+    ) {
+      return;
+    }
+    originalWarn.call(console, ...args);
+  };
+
+  // Opcional: Silenciar console.log en tests (preservado)
+  console.log = jest.fn();
+});
+
+afterAll(() => {
+  console.error = originalError;
+  console.warn = originalWarn;
+  console.log = originalLog;
+});
+
+// ===================================================================
+// 🔄 LIFECYCLE HOOKS
+// ===================================================================
+
+beforeEach(() => {
+  // Limpiar storage (preservado)
+  enhancedLocalStorageMock.clear();
+  
+  // Reset mocks básicos (preservado)
+  jest.clearAllMocks();
+  
+  // 🆕 Reset mocks enterprise
+  globalThis.resetRanchOSMocks();
+});
+
+afterEach(() => {
+  // Limpiar todos los mocks después de cada test (preservado)
+  jest.clearAllMocks();
+});
+
+// ===================================================================
+// 🛠️ UTILIDADES GLOBALES (PRESERVADAS + MEJORADAS)
+// ===================================================================
+
+// Preservado: utilidad sleep
+globalThis.sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Preservado: mock para tests que necesiten simular errores de quota
+(global as any).mockStorageQuotaExceeded = () => {
+  const error = new Error('QuotaExceededError');
+  error.name = 'QuotaExceededError';
+  enhancedLocalStorageMock.setItem = jest.fn().mockImplementation(() => {
+    throw error;
+  });
+};
+
+// Preservado: restaurar localStorage mock normal
+(global as any).restoreStorageMock = () => {
+    ai: aiMock
+  }
+});
+
+// ===================================================================
+// ⚙️ CONFIGURACIÓN FINAL
+// ===================================================================
+
+// Timeout para tests complejos (preservado)
+jest.setTimeout(10000); // 10 segundos
+
+// 🆕 Configuración específica por tipo de test
+if (process.env.TEST_TYPE === 'performance') {
+  jest.setTimeout(30000); // 30 segundos para tests de performance
+}
+
+if (process.env.TEST_TYPE === 'integration') {
+  jest.setTimeout(20000); // 20 segundos para tests de integración
+}
+
+// 🆕 Exportar mocks para uso en tests específicos
+export {
+  COUNTRY_CONFIGS,
+  DEFAULT_FEATURE_FLAGS,
+  DEFAULT_PERFORMANCE_CONFIG,
+  createBankingMock,
+  createIoTMock,
+  createWeatherMock,
+  createAIMock,
+  enhancedLocalStorageMock
+};

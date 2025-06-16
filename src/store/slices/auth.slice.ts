@@ -4,6 +4,7 @@ import { AuthCookieManager } from '@/lib/auth-cookies';
 import type { User, Profile } from './types';
 import type { ProcessingResult, ValidationError } from '@/types';
 import type { ProcessingSlice } from './processing.slice';
+import { cleanupService } from '@/services/storage/CleanupService';
 
 // Re-exportar tipos para compatibilidad
 export type { User, Profile } from './types';
@@ -106,9 +107,27 @@ export const createAuthSlice: StateCreator<
   },
   
   // === ESTABLECER USUARIO ===
-  setCurrentUser: (user) => {
+  setCurrentUser: async (user) => {
     const isAuthenticated = !!user;
+    console.log("[DEBUG] setCurrentUser llamado con:", user);
     const isTemporary = user?.id?.startsWith('demo-') || false;
+    
+    // Si es un usuario real (no demo) y está autenticándose
+    if (user && !isTemporary && isAuthenticated) {
+      console.log("[DEBUG] Usuario real detectado, limpiando datos demo...");
+      
+      // Limpiar datos demo de forma silenciosa
+      try {
+        await cleanupService.cleanDemoData({
+          dryRun: false,
+          verbose: false
+        });
+        console.log("[DEBUG] Datos demo limpiados exitosamente");
+      } catch (error) {
+        console.error("[DEBUG] Error limpiando datos demo:", error);
+        // No fallar la autenticación por error de limpieza
+      }
+    }
     
     set({ 
       currentUser: user, 
@@ -144,7 +163,33 @@ export const createAuthSlice: StateCreator<
         });
       }
     }
+    
+    // 🎯 DETECCIÓN DE CUENTA DEMO
+    if (user && user.email === 'demo@ranchos.io') {
+      console.log('🎪 Cuenta DEMO detectada - Cargando datos de demostración...');
+      
+      // Importar función de carga demo (lazy load)
+      import('../../utils/demoDataGenerator').then(({ loadDemoDataToStore }) => {
+        // Verificar si ya hay datos para no duplicar
+        setTimeout(() => {
+          const fullStore = get() as any;
+          if ((!fullStore.ranches || fullStore.ranches.length === 0) || 
+              (!fullStore.animals || fullStore.animals.length === 0)) {
+            loadDemoDataToStore(fullStore).then((result: any) => {
+              if (result.success) {
+                console.log('✅ Datos DEMO cargados:', result.summary);
+              }
+            }).catch((error: any) => {
+              console.error('❌ Error cargando datos demo:', error);
+            });
+          }
+        }, 100); // Pequeño delay para asegurar que el store esté listo
+      }).catch(() => {
+        console.error('❌ Error importando generador de datos demo');
+      });
+    }
   },
+  
   
   // === ESTABLECER PERFIL ===
   setProfile: (profile) => {
@@ -163,7 +208,6 @@ export const createAuthSlice: StateCreator<
       });
     }
   },
-  
   // === ACTUALIZAR PERFIL - Con ProcessingResult ===
   updateProfile: async (updates) => {
     const operationId = `update-profile-${Date.now()}`;
@@ -380,6 +424,33 @@ export const createAuthSlice: StateCreator<
         return result;
       }
       
+      // 🎯 Detectar cuenta DEMO
+      if (email === 'demo@ranchos.io' && password === 'demo123') {
+        console.log('🔑 Login con cuenta DEMO');
+        
+        // Usuario demo especial
+        const demoUser: User = {
+          id: 'demo-user-001',
+          email: 'demo@ranchos.io',
+          name: 'Usuario Demo Premium',
+          countryCode: 'MX',
+          role: 'owner',
+          permissions: ['*'],
+          createdAt: new Date().toISOString()
+        };
+        
+        // Actualizar estado (esto disparará la carga de datos demo)
+        get().setCurrentUser(demoUser);
+        
+        const result = get().createProcessingResult<User>(
+          true,
+          demoUser
+        );
+        
+        get().endProcessing(operationId, result);
+        return result;
+      }
+      
       // Simular llamada API (aquí iría la llamada real)
       await new Promise(resolve => setTimeout(resolve, 1000));
       
@@ -517,6 +588,21 @@ export const createAuthSlice: StateCreator<
       );
       
       get().endProcessing(operationId, errorResult);
+      
+      // Limpiar datos según tipo de usuario antes de limpiar estado
+      const wasTemporary = get().isTemporaryUser();
+      try {
+        if (wasTemporary) {
+          await cleanupService.cleanDemoData({ dryRun: false, verbose: false });
+        } else {
+          await cleanupService.cleanOnLogout({
+            preserveUserData: false,
+            preserveKeys: ['preferredCountry', 'rememberedEmail']
+          });
+        }
+      } catch (error) {
+        console.error("[DEBUG] Error durante limpieza en logout:", error);
+      }
       return errorResult;
     }
   },

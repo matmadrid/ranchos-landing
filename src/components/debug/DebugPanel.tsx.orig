@@ -1,0 +1,225 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import useRanchOSStore from '@/store';
+import { X, Bug, RefreshCw, Database, User, Building2, Package } from 'lucide-react';
+
+export default function DebugPanel() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [storeData, setStoreData] = useState<any>({});
+  const store = useRanchOSStore();
+
+  useEffect(() => {
+    // Actualizar datos cada segundo cuando el panel está abierto
+    if (isOpen) {
+      const interval = setInterval(() => {
+        const currentStore = useRanchOSStore.getState();
+        setStoreData({
+          currentUser: currentStore.currentUser,
+          ranches: currentStore.ranches,
+          animals: currentStore.animals,
+          activeRanch: currentStore.activeRanch,
+          profile: currentStore.profile,
+          isAuthenticated: currentStore.isAuthenticated,
+          // Contar propiedades
+          totalAnimals: currentStore.animals?.length || 0,
+          totalRanches: currentStore.ranches?.length || 0,
+          hasActiveRanch: !!currentStore.activeRanch,
+          hasProfile: !!currentStore.profile
+        });
+      }, 1000);
+
+      return () => clearInterval(interval);
+    }
+    return; // Return cuando isOpen es false
+  }, [isOpen]);
+
+  const loadDemoData = () => {
+    const store = useRanchOSStore.getState();
+    
+    // Si no hay usuario, crear uno demo
+    if (!store.currentUser) {
+      store.setCurrentUser({
+        id: 'demo-user-001',
+        email: 'demo@ranchos.io',
+        name: 'Usuario Demo',
+        createdAt: new Date().toISOString()
+      });
+    }
+    
+    const userId = store.currentUser?.id || 'demo-debug-001';
+
+    // Datos demo
+    const demoRanches = [
+      { 
+        id: 'r1', 
+        name: 'Rancho Santa María', 
+        location: 'Mexicali', 
+        size: 1500, 
+        userId,
+        countryCode: 'MX' as const,
+        sizeUnit: 'hectare' as const,
+        createdAt: new Date().toISOString()
+      },
+      { 
+        id: 'r2', 
+        name: 'Rancho Los Alamos', 
+        location: 'Valle de Mexicali', 
+        size: 1200, 
+        userId,
+        countryCode: 'MX' as const,
+        sizeUnit: 'hectare' as const,
+        createdAt: new Date().toISOString()
+      },
+      { 
+        id: 'r3', 
+        name: 'Rancho El Progreso', 
+        location: 'San Felipe', 
+        size: 800, 
+        userId,
+        countryCode: 'MX' as const,
+        sizeUnit: 'hectare' as const,
+        createdAt: new Date().toISOString()
+      }
+    ];
+
+    const demoAnimals: any[] = [];
+    const types = ['Vaca', 'Toro', 'Becerro', 'Vaquilla'];
+    
+    demoRanches.forEach((ranch, idx) => {
+      const count = [150, 125, 80][idx];
+      for (let i = 0; i < count; i++) {
+        demoAnimals.push({
+          id: `${ranch.id}-a${i}`,
+          tag: `${ranch.name[7]}${String(i+1).padStart(4,'0')}`,
+          name: `Animal ${i+1}`,
+          type: types[Math.floor(Math.random() * 4)],
+          breed: 'Angus',
+          sex: Math.random() > 0.5 ? 'male' : 'female',
+          birthDate: new Date(2022 - Math.floor(Math.random() * 3), Math.floor(Math.random() * 12), Math.floor(Math.random() * 28)).toISOString(),
+          weight: 250 + Math.floor(Math.random() * 350),
+          ranchId: ranch.id,
+          status: 'healthy',
+          userId,
+          createdAt: new Date().toISOString()
+        });
+      }
+    });
+
+    // Actualizar store
+    useRanchOSStore.setState({
+      ranches: demoRanches,
+      animals: demoAnimals,
+      activeRanch: demoRanches[0],
+      profile: {
+        name: 'Usuario Debug',
+        email: store.currentUser?.email || 'debug@ranchos.io',
+        location: 'Baja California',
+        ranch: 'Rancho Santa María',
+        countryCode: 'MX' as const
+      }
+    });
+
+    alert('✅ Datos demo cargados!');
+  };
+
+  const clearAllData = () => {
+    if (confirm('¿Estás seguro de limpiar todos los datos?')) {
+      localStorage.clear();
+      window.location.reload();
+    }
+  };
+
+  return (
+    <>
+      {/* Botón flotante */}
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="fixed bottom-4 left-4 z-50 bg-black text-white p-3 rounded-full shadow-lg hover:bg-gray-800 transition-colors"
+        title="Debug Panel"
+      >
+        <Bug className="h-6 w-6" />
+      </button>
+
+      {/* Panel */}
+      {isOpen && (
+        <div className="fixed bottom-20 left-4 z-50 bg-white rounded-lg shadow-2xl w-96 max-h-[80vh] overflow-hidden">
+          <div className="p-4 bg-gray-100 flex items-center justify-between">
+            <h3 className="font-semibold text-gray-800">Debug Panel</h3>
+            <button
+              onClick={() => setIsOpen(false)}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+          
+          <div className="p-4 overflow-y-auto max-h-[calc(80vh-120px)]">
+            {/* Estado actual */}
+            <div className="mb-6">
+              <h4 className="font-semibold mb-2 flex items-center gap-2">
+                <User className="h-4 w-4" />
+                Usuario Actual
+              </h4>
+              <div className="bg-gray-50 p-3 rounded text-sm">
+                <p><strong>Autenticado:</strong> {storeData.isAuthenticated ? 'Sí' : 'No'}</p>
+                <p><strong>Email:</strong> {storeData.currentUser?.email || 'N/A'}</p>
+                <p><strong>Nombre:</strong> {storeData.currentUser?.name || 'N/A'}</p>
+              </div>
+            </div>
+
+            <div className="mb-6">
+              <h4 className="font-semibold mb-2 flex items-center gap-2">
+                <Building2 className="h-4 w-4" />
+                Ranchos
+              </h4>
+              <div className="bg-gray-50 p-3 rounded text-sm">
+                <p><strong>Total:</strong> {storeData.totalRanches}</p>
+                <p><strong>Activo:</strong> {storeData.activeRanch?.name || 'Ninguno'}</p>
+              </div>
+            </div>
+
+            <div className="mb-6">
+              <h4 className="font-semibold mb-2 flex items-center gap-2">
+                <Package className="h-4 w-4" />
+                Animales
+              </h4>
+              <div className="bg-gray-50 p-3 rounded text-sm">
+                <p><strong>Total:</strong> {storeData.totalAnimals}</p>
+              </div>
+            </div>
+
+            {/* Acciones */}
+            <div className="space-y-2">
+              <button
+                onClick={loadDemoData}
+                className="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors flex items-center justify-center gap-2"
+              >
+                <Database className="h-4 w-4" />
+                Cargar Datos Demo
+              </button>
+              
+              <button
+                onClick={clearAllData}
+                className="w-full bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition-colors flex items-center justify-center gap-2"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Limpiar Todo
+              </button>
+            </div>
+
+            {/* Store completo (colapsable) */}
+            <details className="mt-6">
+              <summary className="cursor-pointer font-semibold text-sm text-gray-600 hover:text-gray-800">
+                Ver Store Completo
+              </summary>
+              <pre className="mt-2 text-xs bg-gray-100 p-2 rounded overflow-x-auto">
+                {JSON.stringify(storeData, null, 2)}
+              </pre>
+            </details>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}

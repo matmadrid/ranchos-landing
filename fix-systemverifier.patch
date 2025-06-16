@@ -1,0 +1,32 @@
+--- a/src/components/debug/SystemVerifier.tsx
++++ b/src/components/debug/SystemVerifier.tsx
+@@ -2,7 +2,7 @@
+ 'use client';
+ 
+ import { useEffect, useState } from 'react';
+-import { useRanchOSStore } from '@/store/useStore';
++import useRanchOSStore from '@/store';
+ import { CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+ 
+ // Declaración de tipos para window
+@@ -63,11 +63,11 @@ export default function SystemVerifier() {
+           expected: 'Santa María: 150, Los Alamos: 125, El Progreso: 80',
+           actual: (() => {
+             if (!store.ranches || !store.animals) return 'No data';
+-            const distribution = store.ranches.map(ranch => {
+-              const count = store.animals.filter(a => a.ranchId === ranch.id).length;
++            const distribution = store.ranches.map((ranch: any) => {
++              const count = store.animals.filter((a: any) => a.ranchId === ranch.id).length;
+               return `${ranch.name}: ${count}`;
+             }).join(', ');
+             return distribution || 'No distribution';
+           })(),
+           passed: (() => {
+             if (!store.ranches || !store.animals) return false;
+-            const counts = store.ranches.map(ranch => 
+-              store.animals.filter(a => a.ranchId === ranch.id).length
++            const counts = store.ranches.map((ranch: any) => 
++              store.animals.filter((a: any) => a.ranchId === ranch.id).length
+             );
+             return counts[0] === 150 && counts[1] === 125 && counts[2] === 80;
+           })()

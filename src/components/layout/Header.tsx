@@ -14,7 +14,8 @@ import {
   ChevronDown,
   Sparkles,
   LogOut,
-  Settings
+  Settings,
+  Package
 } from 'lucide-react';
 import { useState } from 'react';
 import { useRouter } from "next/navigation";
@@ -28,6 +29,7 @@ import { LogoHeader } from '@/components/ui/logo-header';
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
   { name: 'Analítica', href: '/analytics', icon: BarChart3 },
+  { name: 'Inventario', href: '/inventory', icon: Package },
 ];
 
 export default function Header() {

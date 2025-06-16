@@ -1,0 +1,16 @@
+
+  useEffect(() => {
+    // Verificar si ya fue mostrado antes
+    if (showOnlyOnce) {
+      const wasShown = localStorage.getItem('demoAlertShown');
+      if (wasShown === 'true') {
+        setIsDismissed(true);
+        return;
+      }
+    }
+
+    // Mostrar alerta si corresponde
+    if (shouldShowPrompt && !isDismissed) {
+      setIsVisible(true);
+     
+      // Auto ocultar si está configurado

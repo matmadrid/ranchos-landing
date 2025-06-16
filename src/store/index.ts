@@ -13,22 +13,17 @@ import type {
   LivestockProfitabilityOutput
 } from '@/types';
 
-// Importar slices mejorados
+// Importar slices existentes
 import { AuthSlice, createAuthSlice } from './slices/auth.slice';
 import { RanchSlice, createRanchSlice } from './slices/ranch.slice';
 import { AnimalSlice, createAnimalSlice } from './slices/animal.slice';
 import { RegionalSlice, createRegionalSlice } from './slices/regional.slice';
 import { ProcessingSlice, createProcessingSlice } from './slices/processing.slice';
 import { ProfitabilitySlice, createProfitabilitySlice } from './slices/profitability.slice';
+import { InventorySlice, createInventorySlice } from './slices/inventorySlice';
 
-// Re-exportar tipos desde slices
-export type {
-  User,
-  Profile,
-  Ranch,
-  Animal,
-  MilkProduction
-} from './slices/types';
+// BATALLA 7: Importar WeightTracker Pro
+import { WeighingSlice, createWeighingSlice } from './slices/weighingSlice';
 
 // Tipo base que incluye ProcessingSlice para que esté disponible en todos los slices
 type StoreBase = ProcessingSlice;
@@ -40,13 +35,49 @@ export type RanchOSStore =
   AnimalSlice & 
   RegionalSlice & 
   ProcessingSlice & 
-  ProfitabilitySlice & {
+  ProfitabilitySlice & 
+  InventorySlice & 
+  WeighingSlice & { // BATALLA 7: Añadir WeightTracker Pro
     // Métodos transversales de validación
     validateEntity: <T>(entity: T, type: 'ranch' | 'animal' | 'production') => ValidationResult;
     getValidationErrors: (entityId: string) => ValidationError[];
     generateTraceId: () => string;
     
-    // Métodos de migración
+    // BATALLA 7: Métodos de integración WeightTracker Pro + LivestockCore
+    initializeAllSystems: (ranchId: string) => Promise<{
+      livestock: boolean;
+      weighing: boolean;
+      errors: string[];
+    }>;
+    
+    getIntegratedDashboardData: () => {
+      livestock: {
+        totalAnimals: number;
+        totalValue: number;
+        recentMovements: number;
+        categoriesWithStock: number;
+      };
+      weighing: {
+        totalRecords: number;
+        averageGMD: number;
+        animalsMonitored: number;
+        pendingWeighing: number;
+      };
+      alerts: {
+        inventory: number;
+        weighing: number;
+        critical: number;
+      };
+    };
+    
+    syncInventoryWithWeighing: () => Promise<{
+      success: boolean;
+      syncedAnimals: number;
+      conflicts: string[];
+      recommendations: string[];
+    }>;
+    
+    // Métodos de migración existentes
     migrateFromLegacyStore: () => Promise<void>;
   };
 
@@ -68,14 +99,18 @@ const useRanchOSStore = create<RanchOSStore>()(
           // ProcessingSlice primero para que esté disponible
           ...processingSlice,
           
-          // Resto de slices con acceso a ProcessingSlice
+          // Resto de slices existentes
           ...createAuthSlice(set, getWithProcessing, api),
           ...createRanchSlice(set, getWithProcessing, api),
           ...createAnimalSlice(set, getWithProcessing, api),
           ...createRegionalSlice(set, getWithProcessing, api),
           ...createProfitabilitySlice(set, getWithProcessing, api),
+          ...createInventorySlice(set, getWithProcessing, api),
           
-          // === MÉTODOS TRANSVERSALES ===
+          // BATALLA 7: Integrar WeightTracker Pro
+          ...createWeighingSlice(set, getWithProcessing, api),
+          
+          // === MÉTODOS TRANSVERSALES EXISTENTES ===
           
           // Generar ID de trazabilidad único
           generateTraceId: () => {
@@ -92,7 +127,7 @@ const useRanchOSStore = create<RanchOSStore>()(
             const country = get().currentCountry;
             const localeConfig = get().localeConfig;
             
-            // Validaciones base
+            // Validaciones base (mantener código existente)
             switch (type) {
               case 'ranch':
                 // Validación nombre
@@ -245,7 +280,191 @@ const useRanchOSStore = create<RanchOSStore>()(
             return result?.errors || [];
           },
           
-          // Migración desde store legacy
+          // === BATALLA 7: MÉTODOS DE INTEGRACIÓN WEIGHTTRACKER PRO ===
+          
+          /**
+           * Inicializar todos los sistemas para un rancho
+           */
+          initializeAllSystems: async (ranchId: string) => {
+            const errors: string[] = [];
+            let livestock = false;
+            let weighing = false;
+            
+            try {
+              // Inicializar LivestockCore (Inventario) - usar método existente si existe
+              if (get().initializeInventory) {
+                const livestockResult = await get().initializeInventory(ranchId);
+                livestock = livestockResult?.success || false;
+                if (!livestock) {
+                  errors.push('Error inicializando sistema de inventario');
+                }
+              } else {
+                livestock = true; // Asumir que está inicializado si no hay método específico
+              }
+            } catch (error) {
+              errors.push(`Error LivestockCore: ${error instanceof Error ? error.message : 'Desconocido'}`);
+            }
+            
+            try {
+              // Inicializar WeightTracker Pro
+              const weighingResult = await get().initializeWeighingSystem(ranchId);
+              weighing = weighingResult?.success || false;
+              if (!weighing) {
+                errors.push('Error inicializando sistema de pesaje');
+              }
+            } catch (error) {
+              errors.push(`Error WeightTracker Pro: ${error instanceof Error ? error.message : 'Desconocido'}`);
+            }
+            
+            // Si ambos sistemas están inicializados, realizar sincronización inicial
+            if (livestock && weighing) {
+              try {
+                await get().syncInventoryWithWeighing();
+              } catch (error) {
+                errors.push(`Error en sincronización inicial: ${error instanceof Error ? error.message : 'Desconocido'}`);
+              }
+            }
+            
+            return { livestock, weighing, errors };
+          },
+          
+          /**
+           * Dashboard integrado con datos de ambos sistemas
+           */
+          getIntegratedDashboardData: () => {
+            // Obtener stats de inventario (LivestockCore)
+            const inventoryStats = get().getInventoryStats ? get().getInventoryStats() : {
+              totalAnimals: 0,
+              totalValue: 0,
+              movementsThisMonth: 0,
+              categoriesWithStock: 0,
+              lastMovementDate: null
+            };
+            
+            // Obtener stats de pesaje (WeightTracker Pro)
+            const weighingStats = get().getGlobalStats ? get().getGlobalStats() : {
+              totalRecords: 0,
+              animalesMonitoreados: 0,
+              animalesPendientesPesaje: 0,
+              alertasActivas: 0,
+              alertasCriticas: 0,
+              gmdPromedioGlobal: 0,
+              ultimaActualizacion: null
+            };
+            
+            // ✅ CORRECCIÓN PROFESIONAL: Nomenclatura consistente y descriptiva
+            const inventoryAlertsCount = get().unreadAlertsCount || 0;
+            const weighingAlertsCount = weighingStats.alertasActivas || 0;
+            const criticalAlertsCount = weighingStats.alertasCriticas || 0;
+            
+            return {
+              livestock: {
+                totalAnimals: inventoryStats.totalAnimals,
+                totalValue: inventoryStats.totalValue,
+                recentMovements: inventoryStats.movementsThisMonth,
+                categoriesWithStock: inventoryStats.categoriesWithStock
+              },
+              weighing: {
+                totalRecords: weighingStats.totalRecords,
+                averageGMD: weighingStats.gmdPromedioGlobal,
+                animalsMonitored: weighingStats.animalesMonitoreados,
+                pendingWeighing: weighingStats.animalesPendientesPesaje
+              },
+              alerts: {
+                inventory: inventoryAlertsCount,
+                weighing: weighingAlertsCount, // ✅ CORREGIDO: Variable correcta
+                critical: criticalAlertsCount   // ✅ CORREGIDO: Sin duplicación
+              }
+            };
+          },
+          
+          /**
+           * Sincronización bidireccional entre inventario y pesaje
+           */
+          syncInventoryWithWeighing: async () => {
+            try {
+              const conflicts: string[] = [];
+              const recommendations: string[] = [];
+              let syncedAnimals = 0;
+              
+              // Obtener datos de ambos sistemas
+              const animals = get().animals || [];
+              const weighingRecords = get().weighingRecords || [];
+              const categoryBalances = get().categoryBalances || new Map();
+              
+              // 1. Verificar consistencia de animales entre sistemas
+              const animalsWithWeighing = new Set(weighingRecords.map(r => r.animalId));
+              const animalsInInventory = new Set(animals.map(a => a.id));
+              
+              // Animales en pesaje pero no en inventario
+              weighingRecords.forEach(record => {
+                if (!animalsInInventory.has(record.animalId)) {
+                  conflicts.push(`Animal ${record.animalTag} (${record.animalId}) tiene pesajes pero no existe en inventario`);
+                }
+              });
+              
+              // 2. Verificar consistencia de categorías
+              const weighingByCategory = new Map<string, number>();
+              weighingRecords.forEach(record => {
+                const latestForAnimal = weighingRecords
+                  .filter(r => r.animalId === record.animalId)
+                  .sort((a, b) => b.fecha.localeCompare(a.fecha))[0];
+                
+                if (latestForAnimal.id === record.id) { // Solo contar el último pesaje por animal
+                  weighingByCategory.set(
+                    record.categoriaActual, 
+                    (weighingByCategory.get(record.categoriaActual) || 0) + 1
+                  );
+                }
+              });
+              
+              // Comparar con balances de inventario
+              categoryBalances.forEach((balance, categoryId) => {
+                const weighingCount = weighingByCategory.get(categoryId) || 0;
+                if (Math.abs(balance - weighingCount) > 0) {
+                  conflicts.push(`Categoría ${categoryId}: Inventario=${balance}, Pesajes=${weighingCount}`);
+                }
+              });
+              
+              // 3. Generar recomendaciones basadas en conflictos
+              if (conflicts.length === 0) {
+                recommendations.push('✅ Sistemas completamente sincronizados');
+                syncedAnimals = animals.length;
+              } else {
+                recommendations.push('🔄 Sincronización requerida');
+                recommendations.push(`📊 ${conflicts.length} discrepancias encontradas`);
+                
+                if (conflicts.length < 5) {
+                  recommendations.push('🎯 Discrepancias menores - corrección automática posible');
+                } else {
+                  recommendations.push('⚠️ Múltiples discrepancias - revisión manual recomendada');
+                }
+                
+                // Sugerir acciones específicas
+                recommendations.push('📋 Acciones sugeridas:');
+                recommendations.push('   • Verificar movimientos de inventario recientes');
+                recommendations.push('   • Revisar pesajes sin conciliar');
+                recommendations.push('   • Actualizar categorías basadas en peso');
+              }
+              
+              return {
+                success: conflicts.length === 0,
+                syncedAnimals,
+                conflicts,
+                recommendations
+              };
+              
+            } catch (error) {
+              return {
+                success: false,
+                syncedAnimals: 0,
+                conflicts: [`Error en sincronización: ${error instanceof Error ? error.message : 'Desconocido'}`],
+                recommendations: ['❌ Reintentar sincronización', '🔧 Verificar configuración de sistemas']
+              };
+            }
+          },
+          
+          // Migración desde store legacy (mantener método existente)
           migrateFromLegacyStore: async () => {
             const legacyStores = ['ranch-store', 'ranch-store-v2'];
             let migrated = false;
@@ -363,6 +582,16 @@ const useRanchOSStore = create<RanchOSStore>()(
           cattle: state.cattle,
           milkProductions: state.milkProductions,
           
+          // === Inventory (Batalla 6) ===
+          movements: state.movements,
+          categories: state.categories,
+          categoryBalances: state.categoryBalances,
+          
+          // === WeightTracker Pro (Batalla 7) ===
+          weighingRecords: state.weighingRecords,
+          weighingAlerts: state.weighingAlerts, // Persistir alertas de pesaje
+          systemConfig: state.systemConfig,
+          
           // === Regional ===
           currentCountry: state.currentCountry,
           localeConfig: state.localeConfig,
@@ -377,11 +606,14 @@ const useRanchOSStore = create<RanchOSStore>()(
         onRehydrateStorage: () => (state) => {
           if (state) {
             console.log('🔄 RanchOS Store rehidratado:', {
-              version: 'v3',
+              version: 'v3-batalla7',
               usuario: state.currentUser?.name || 'No autenticado',
               rancho: state.activeRanch?.name || 'Sin rancho',
               país: state.currentCountry,
               animales: state.animals?.length || 0,
+              inventario: state.movements?.length || 0,
+              pesajes: state.weighingRecords?.length || 0,
+              alertasPesaje: state.weighingAlerts?.length || 0,
               timestamp: new Date().toISOString()
             });
             
@@ -391,6 +623,28 @@ const useRanchOSStore = create<RanchOSStore>()(
             }
             if (!state.analysisHistory || !(state.analysisHistory instanceof Map)) {
               state.analysisHistory = new Map();
+            }
+            
+            // BATALLA 7: Inicializar arrays de WeightTracker Pro
+            if (!state.weighingAlerts || !Array.isArray(state.weighingAlerts)) {
+              state.weighingAlerts = [];
+            }
+            
+            // BATALLA 7: Inicializar Maps de WeightTracker Pro
+            if (!state.growthAnalyses || !(state.growthAnalyses instanceof Map)) {
+              state.growthAnalyses = new Map();
+            }
+            if (!state.categoryStats || !(state.categoryStats instanceof Map)) {
+              state.categoryStats = new Map();
+            }
+            if (!state.animalConfigs || !(state.animalConfigs instanceof Map)) {
+              state.animalConfigs = new Map();
+            }
+            if (!state.projectionCache || !(state.projectionCache instanceof Map)) {
+              state.projectionCache = new Map();
+            }
+            if (!state.weighingMonthlyReports || !(state.weighingMonthlyReports instanceof Map)) {
+              state.weighingMonthlyReports = new Map();
             }
             
             // Auto-migrar si es necesario
@@ -431,9 +685,17 @@ function getTagFormatExample(country: CountryCode): string {
   return examples[country] || 'TAG-001';
 }
 
+// === SELECTORES ATÓMICOS PARA WEIGHTTRACKER (OPTIMIZACIÓN) ===
+const selectWeighingRecords = (state: RanchOSStore) => state.weighingRecords;
+const selectWeighingAlerts = (state: RanchOSStore) => state.weighingAlerts;
+const selectGlobalStats = (state: RanchOSStore) => state.globalStats;
+const selectIntegratedDashboardData = (state: RanchOSStore) => state.getIntegratedDashboardData;
+const selectSyncInventoryWithWeighing = (state: RanchOSStore) => state.syncInventoryWithWeighing;
+const selectInitializeAllSystems = (state: RanchOSStore) => state.initializeAllSystems;
+
 // === HOOKS OPTIMIZADOS CON SELECTORES ===
 
-// Autenticación
+// Hooks existentes (mantener todos)
 export const useCurrentUser = () => useRanchOSStore((state) => state.currentUser);
 export const useIsAuthenticated = () => useRanchOSStore((state) => state.isAuthenticated);
 export const useIsTemporaryUser = () => useRanchOSStore((state) => state.isTemporaryUser());
@@ -480,7 +742,99 @@ export const useLastProcessingResult = () => useRanchOSStore((state) => state.la
 export const useLastAnalysis = () => useRanchOSStore((state) => state.lastAnalysis);
 export const useIsAnalyzing = () => useRanchOSStore((state) => state.isAnalyzing);
 
-// === HOOKS COMPUESTOS ===
+// === HOOKS OPTIMIZADOS PARA WEIGHTTRACKER PRO ===
+
+/**
+ * Hook optimizado para WeightTracker Pro
+ * Evita re-renders innecesarios usando selectores atómicos
+ */
+export const useWeightTrackerOptimized = () => {
+  const weighingRecords = useRanchOSStore(selectWeighingRecords);
+  const weighingAlerts = useRanchOSStore(selectWeighingAlerts);
+  const globalStats = useRanchOSStore(selectGlobalStats);
+  
+  // Funciones separadas para evitar re-renders
+  const addWeighingRecord = useRanchOSStore((state) => state.addWeighingRecord);
+  const getWeighingRecordsByAnimal = useRanchOSStore((state) => state.getWeighingRecordsByAnimal);
+  const getGlobalStats = useRanchOSStore((state) => state.getGlobalStats);
+  const checkWeighingAlerts = useRanchOSStore((state) => state.checkWeighingAlerts);
+  const getLatestWeighingByAnimal = useRanchOSStore((state) => state.getLatestWeighingByAnimal);
+  const updateWeighingRecord = useRanchOSStore((state) => state.updateWeighingRecord);
+  const deleteWeighingRecord = useRanchOSStore((state) => state.deleteWeighingRecord);
+  const getAlertsByAnimal = useRanchOSStore((state) => state.getAlertsByAnimal);
+  const markAlertAsRead = useRanchOSStore((state) => state.markAlertAsRead);
+  const markAlertAsResolved = useRanchOSStore((state) => state.markAlertAsResolved);
+  const initializeWeighingSystem = useRanchOSStore((state) => state.initializeWeighingSystem);
+  
+  return {
+    weighingRecords,
+    weighingAlerts,
+    globalStats,
+    addWeighingRecord,
+    getWeighingRecordsByAnimal,
+    getGlobalStats,
+    checkWeighingAlerts,
+    getLatestWeighingByAnimal,
+    updateWeighingRecord,
+    deleteWeighingRecord,
+    getAlertsByAnimal,
+    markAlertAsRead,
+    markAlertAsResolved,
+    initializeWeighingSystem
+  };
+};
+
+/**
+ * Hook optimizado para Dashboard Integrado
+ * Evita re-renders innecesarios usando selectores específicos
+ */
+export const useIntegratedDashboardOptimized = () => {
+  const getIntegratedDashboardData = useRanchOSStore(selectIntegratedDashboardData);
+  const syncInventoryWithWeighing = useRanchOSStore(selectSyncInventoryWithWeighing);
+  const initializeAllSystems = useRanchOSStore(selectInitializeAllSystems);
+  
+  return {
+    getIntegratedDashboardData,
+    syncInventoryWithWeighing,
+    initializeAllSystems
+  };
+};
+
+// BATALLA 7: Hooks para WeightTracker Pro (MANTENER PARA COMPATIBILIDAD)
+export const useWeightTracker = () => useRanchOSStore((state) => ({
+  weighingRecords: state.weighingRecords,
+  weighingAlerts: state.weighingAlerts,
+  addWeighingRecord: state.addWeighingRecord,
+  getWeighingRecordsByAnimal: state.getWeighingRecordsByAnimal,
+  getGlobalStats: state.getGlobalStats,
+  checkWeighingAlerts: state.checkWeighingAlerts,
+  getLatestWeighingByAnimal: state.getLatestWeighingByAnimal,
+  updateWeighingRecord: state.updateWeighingRecord,
+  deleteWeighingRecord: state.deleteWeighingRecord,
+  getAlertsByAnimal: state.getAlertsByAnimal,
+  markAlertAsRead: state.markAlertAsRead,
+  markAlertAsResolved: state.markAlertAsResolved,
+  initializeWeighingSystem: state.initializeWeighingSystem
+}));
+
+export const useIntegratedDashboard = () => useRanchOSStore((state) => ({
+  getIntegratedDashboardData: state.getIntegratedDashboardData,
+  syncInventoryWithWeighing: state.syncInventoryWithWeighing,
+  initializeAllSystems: state.initializeAllSystems
+}));
+
+// LivestockCore (Batalla 6) - Mantener intacto
+export const useLivestockCore = () => useRanchOSStore((state) => ({
+  movements: state.movements,
+  categories: state.categories,
+  categoryBalances: state.categoryBalances,
+  addMovement: state.addMovement,
+  getInventoryStats: state.getInventoryStats,
+  getCategoryBalance: state.getCategoryBalance,
+  getRecentMovements: state.getRecentMovements
+}));
+
+// === HOOKS COMPUESTOS EXISTENTES (mantener todos) ===
 
 /**
  * Hook para el estado completo de autenticación
@@ -521,5 +875,37 @@ export const useActiveRanchOperations = () => {
   };
 };
 
-// Exportar por defecto
+// Re-exportar tipos desde slices
+export type {
+  User,
+  Profile,
+  Ranch,
+  Animal,
+  MilkProduction
+} from './slices/types';
+
+// Exportar el store por defecto
 export default useRanchOSStore;
+
+// === DEBUGGING EN DESARROLLO ===
+
+// Exponer store en desarrollo para debugging
+if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+  (window as any).useRanchOSStore = useRanchOSStore;
+  
+  // Agregar helpers de debugging
+  (window as any).debugWeightTracker = () => {
+    const state = useRanchOSStore.getState();
+    console.log('📊 WeightTracker Debug:', {
+      records: state.weighingRecords.length,
+      alerts: state.weighingAlerts.length,
+      stats: state.globalStats,
+      isProcessing: state.isProcessing
+    });
+  };
+  
+  (window as any).debugStore = () => {
+    const state = useRanchOSStore.getState();
+    console.log('🏪 Store completo:', state);
+  };
+}

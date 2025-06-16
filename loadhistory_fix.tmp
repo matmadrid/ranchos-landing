@@ -1,0 +1,12 @@
+  // Cargar historial
+  const loadHistory = useCallback(() => {
+    const cleanupHistory = getCleanupHistory();
+    const formattedHistory = cleanupHistory.map(item => ({
+      type: item.type,
+      timestamp: new Date(item.timestamp),
+      itemsCleaned: item.itemsCleaned,
+      spaceSaved: item.spaceSaved,
+      duration: undefined // CleanupResult no tiene duration
+    }));
+    setHistory(formattedHistory);
+  }, [getCleanupHistory]);

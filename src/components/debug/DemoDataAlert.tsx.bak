@@ -1,0 +1,135 @@
+/**
+* DemoDataAlert Component
+* Alerta automática para datos demo
+*/
+
+import React, { useState, useEffect, useCallback } from 'react';
+import { AlertTriangle, Trash2, X } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useStorageCleanup } from '@/hooks/useStorageCleanup';
+import { useDemoDetection } from '@/hooks/useDemoDetection';
+import { cn } from '@/lib/utils';
+
+export interface DemoDataAlertProps {
+  position?: 'top' | 'bottom';
+  autoHide?: boolean;
+  autoHideAfter?: number;
+  onCleanup?: () => void;
+  className?: string;
+  showOnlyOnce?: boolean;
+}
+
+export function DemoDataAlert({ 
+  position = 'bottom',
+  autoHideAfter,
+  showOnlyOnce = true 
+}: DemoDataAlertProps) {
+  const [isVisible, setIsVisible] = useState(false);
+  const [isDismissed, setIsDismissed] = useState(false);
+ 
+  const { hasDemoData, demoCount, shouldShowPrompt, refresh } = useDemoDetection();
+  const { cleanDemoData, isLoading } = useStorageCleanup({
+    showNotifications: true,
+    confirmBeforeClean: false
+  });
+
+  const handleDismiss = useCallback(() => {
+    setIsVisible(false);
+    setIsDismissed(true);
+   
+    if (showOnlyOnce) {
+      localStorage.setItem('demoAlertShown', 'true');
+    }
+  }, [showOnlyOnce]);
+  useEffect(() => {
+    // Verificar si ya fue mostrado antes
+    if (showOnlyOnce) {
+      const wasShown = localStorage.getItem('demoAlertShown');
+      if (wasShown === 'true') {
+        setIsDismissed(true);
+        return;
+      }
+    }
+
+    // Mostrar alerta si corresponde
+    if (shouldShowPrompt && !isDismissed) {
+      setIsVisible(true);
+    } else {
+      setIsVisible(false);
+    }
+  }, [shouldShowPrompt, isDismissed, showOnlyOnce]);
+
+  const handleClean = async () => {
+    const result = await cleanDemoData();
+    if (result) {
+      setIsVisible(false);
+      refresh();
+    }
+  };
+
+  if (!isVisible || !hasDemoData) {
+    return null;
+  }
+
+  const positionClasses = position === 'top' 
+    ? 'top-4 left-4 right-4' 
+    : 'bottom-4 left-4 right-4';
+
+  return (
+    <div className={`fixed ${positionClasses} z-40 max-w-md mx-auto`}>
+      <Alert className="border-orange-200 bg-orange-50 shadow-lg">
+        <AlertTriangle className="h-4 w-4 text-orange-600" />
+        <AlertTitle className="text-orange-800">
+          Datos de demostración detectados
+        </AlertTitle>
+        <AlertDescription className="mt-2 text-orange-700">
+          <p className="mb-3">
+            Tienes {demoCount.total} elementos demo en tu sistema:
+          </p>
+          <ul className="text-sm space-y-1 mb-4">
+            {demoCount.ranches > 0 && (
+              <li>• {demoCount.ranches} rancho(s) demo</li>
+            )}
+            {demoCount.animals > 0 && (
+              <li>• {demoCount.animals} animal(es) demo</li>
+            )}
+            {demoCount.movements > 0 && (
+              <li>• {demoCount.movements} movimiento(s) demo</li>
+            )}
+          </ul>
+          
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="default"
+              onClick={handleClean}
+              disabled={isLoading}
+              className="bg-orange-600 hover:bg-orange-700"
+            >
+              <Trash2 className="w-4 h-4 mr-1" />
+              Limpiar ahora
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleDismiss}
+              className="border-orange-300 text-orange-700 hover:bg-orange-100"
+            >
+              Más tarde
+            </Button>
+          </div>
+        </AlertDescription>
+        <button
+          onClick={handleDismiss}
+          aria-label="cerrar"
+          className="absolute top-2 right-2 text-orange-600 hover:text-orange-800"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </Alert>
+    </div>
+  );
+}

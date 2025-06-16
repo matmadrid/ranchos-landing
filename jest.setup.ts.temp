@@ -1,0 +1,7 @@
+/// <reference types="jest" />
+
+// Declarar tipo para global.sleep
+declare global {
+  var sleep: (ms: number) => Promise<void>;
+}
+

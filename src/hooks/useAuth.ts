@@ -4,6 +4,7 @@
 import { useEffect } from 'react';
 import useRanchOSStore from '@/store';
 import { useRouter } from 'next/navigation';
+import { useStorageCleanup } from '@/hooks/useStorageCleanup';
 import Cookies from 'js-cookie';
 
 export function useAuth() {
@@ -49,18 +50,42 @@ export function useAuth() {
     }
   };
 
-  const logout = () => {
-    // Clear all auth cookies
-    Cookies.remove('isAuthenticated');
-    Cookies.remove('userId');
-    Cookies.remove('onboardingCompleted');
-    
-    // Clear store
-    setCurrentUser(null);
-    setIsOnboardingComplete(false);
-    
-    // Redirect to login
-    router.push('/auth/login');
+  const logout = async () => {
+    try {
+      // Usar el logout del store que ya tiene limpieza integrada
+      const result = await useRanchOSStore.getState().logout();
+      
+      if (result.success) {
+        // Limpiar cookies adicionales
+        Cookies.remove('isAuthenticated');
+        Cookies.remove('userId');
+        Cookies.remove('onboardingCompleted');
+        Cookies.remove('isTemporaryUser');
+        
+        // Redirigir al login
+        router.push('/auth/login');
+      } else {
+        console.error('Error durante logout:', result.errors?.[0]?.message || "Error en logout");
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('Error during logout:', error);
+      
+      // Fallback: limpiar manualmente
+      Cookies.remove('isAuthenticated');
+      Cookies.remove('userId');
+      Cookies.remove('onboardingCompleted');
+      Cookies.remove('isTemporaryUser');
+      setCurrentUser(null);
+      setIsOnboardingComplete(false);
+      router.push('/auth/login');
+      
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Error durante logout'
+      };
+    }
   };
 
   const checkAuth = () => {

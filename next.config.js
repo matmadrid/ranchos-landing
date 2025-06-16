@@ -1,11 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-reactStrictMode: true,
-experimental: {
-},
-webpack: (config) => {
-config.resolve.fallback = { fs: false, net: false, tls: false };
-return config;
-},
+  reactStrictMode: true,
+  experimental: {
+    // Habilitar el worker de webpack para mejor performance
+    webpackBuildWorker: true,
+  },
+  // Remover webpack config innecesaria
+  // Los fallbacks no son necesarios para tu aplicación
 }
+
 module.exports = nextConfig

@@ -1,0 +1,18 @@
+@@ -10,11 +10,16 @@
+   useEffect(() => {
+     // Actualizar datos cada segundo cuando el panel está abierto
+     if (isOpen) {
+       const interval = setInterval(() => {
+         const currentStore = useRanchOSStore.getState();
+         setStoreData({...});
+-      }, 1000);
++      }, 5000); // Aumentar a 5 segundos
++      
++      // CRÍTICO: Limpiar el interval
++      return () => clearInterval(interval);
+     }
++    
++    return undefined;
+   }, [isOpen]);
+ 
+ 

@@ -1,0 +1,56 @@
+          </div>
+        </motion.div>
+
+        {/* KPI Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <KPICard
+            title="Total Animales"
+            value={stats.totalAnimals}
+            subtitle={`${stats.femaleCount} hembras, ${stats.maleCount} machos`}
+            icon={Users}
+            trend="up"
+            trendValue="+12%"
+            gradient="from-blue-400 to-cyan-600"
+            delay={0}
+          />
+          
+          <KPICard
+            title="Producción Total"
+            value={`${stats.totalProduction} L`}
+            subtitle={`Promedio: ${stats.avgProduction} L/día`}
+            icon={Droplets}
+            trend="up"
+            trendValue="+8%"
+            gradient="from-emerald-400 to-green-600"
+            delay={0.1}
+          />
+          
+          <KPICard
+            title="Peso Promedio"
+            value={`${stats.avgWeight} kg`}
+            subtitle="Ganado en producción"
+            icon={Package}
+            trend="neutral"
+            trendValue="0%"
+            gradient="from-amber-400 to-orange-600"
+            delay={0.2}
+          />
+          
+          <KPICard
+            title="Eficiencia"
+            value="92%"
+            subtitle="Índice de productividad"
+            icon={Zap}
+            trend="up"
+            trendValue="+5%"
+            gradient="from-purple-400 to-pink-600"
+            delay={0.3}
+          />
+        </div>
+
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full max-w-3xl grid-cols-5 mx-auto">
+            <TabsTrigger value="overview">General</TabsTrigger>
+            <TabsTrigger value="production">Producción</TabsTrigger>
+            <TabsTrigger value="health">Salud</TabsTrigger>
