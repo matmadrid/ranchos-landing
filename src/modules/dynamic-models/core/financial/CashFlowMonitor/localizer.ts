@@ -1,8 +1,0 @@
-// CashFlowMonitor/localizer.ts
-import { LocaleConfig } from '../../../types/base';
-
-export class CashFlowMonitorLocalizer {
-  async localize(data: any, config: LocaleConfig): Promise<any> {
-    return data;
-  }
-}

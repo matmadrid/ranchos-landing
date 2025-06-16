@@ -1,8 +1,0 @@
-// StrategicBudgetPlanner/localizer.ts
-import { LocaleConfig } from '../../../types/base';
-
-export class StrategicBudgetPlannerLocalizer {
-  async localize(data: any, config: LocaleConfig): Promise<any> {
-    return data;
-  }
-}
