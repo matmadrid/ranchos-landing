@@ -7,6 +7,7 @@
     "vercel": "next build",
     "dev": "next dev",
     "build": "next build",
+    "vercel": "next build",
     "start": "next start",
     "lint": "next lint",
     "test": "jest",
