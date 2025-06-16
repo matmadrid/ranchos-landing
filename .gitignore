@@ -38,3 +38,4 @@ next-env.d.ts
 *.backup2
 *.backup3
 *.backup4
+.next/cache/
