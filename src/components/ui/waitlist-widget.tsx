@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { Sparkles, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 
 export function WaitlistWidget() {
@@ -25,33 +24,33 @@ export function WaitlistWidget() {
             <Sparkles className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h3 className="font-semibold text-gray-900">¡Únete a la beta gratuita!</h3>
-            <p className="text-sm text-gray-600 mt-1">
-              Acceso exclusivo por invitación a RanchOS
-            </p>
+            <h3 className="text-xl font-semibold text-gray-900">¡Únete a la beta!</h3>
           </div>
         </div>
 
         <div className="space-y-2 mb-4">
           <div className="flex items-center gap-2 text-sm">
             <span className="text-green-600">✓</span>
-            <span className="text-gray-700">Beta gratuita</span>
+            <span className="text-gray-700">Gratis ahora y siempre (sin trucos)</span>
           </div>
           <div className="flex items-center gap-2 text-sm">
             <span className="text-green-600">✓</span>
-            <span className="text-gray-700">Solo por invitación</span>
+            <span className="text-gray-700">Analítica completa incluida</span>
           </div>
           <div className="flex items-center gap-2 text-sm">
             <span className="text-green-600">✓</span>
-            <span className="text-gray-700">Acceso anticipado</span>
+            <span className="text-gray-700">Superpoderes desbloqueables </span>
           </div>
         </div>
 
-        <Link href="/waitlist">
-          <Button className="w-full bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700">
-            Reservar mi lugar →
-          </Button>
-        </Link>
+        <div className="text-center pt-3 border-t border-gray-100">
+          <p className="text-sm text-gray-600 italic">
+            "El mejor software ganadero se comparte <br />entre amigos"
+          </p>
+          <p className="text-xs text-gray-400 mt-1">
+            Solo por invitación • 2025
+          </p>
+        </div>
 
       </div>
     </div>

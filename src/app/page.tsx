@@ -80,20 +80,17 @@ export default function HomePage() {
               Mejora tu operación, comprende el rendimiento y toma mejores decisiones con una herramienta diseñada para el rancho.
 
             </p>
-
-            {/* Botones CTA */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Link href="/waitlist">
-                  <Button size="lg" className="bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white px-8 py-6 text-lg shadow-lg hover:shadow-xl transition-all duration-300">
-                    Comenzar 
-                    <ArrowRight className="ml-2 h-5 w-5" />
-                  </Button>
-                </Link>
-              </motion.div>
-
-              
-            </div>
+{/* Botones CTA */}
+<div className="flex flex-col sm:flex-row gap-4 justify-center">
+  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+    <Link href="/invite">
+      <Button size="lg" className="bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white px-8 py-6 text-lg shadow-lg hover:shadow-xl transition-all duration-300">
+        Soy invitado 
+        <ArrowRight className="ml-2 h-5 w-5" />
+      </Button>
+    </Link>
+  </motion.div>
+</div>
 
             {/* Badges de confianza */}
             <motion.div 
