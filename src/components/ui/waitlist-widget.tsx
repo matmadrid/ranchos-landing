@@ -39,7 +39,7 @@ export function WaitlistWidget() {
           </div>
           <div className="flex items-center gap-2 text-sm">
             <span className="text-green-600">✓</span>
-            <span className="text-gray-700">Opcional: desbloquea superpoderes</span>
+            <span className="text-gray-700">Opcional: desbloquear superpoderes</span>
           </div>
         </div>
 
