@@ -45,7 +45,7 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body className={inter.className}>
-    <Script src="/emergency-stop.js" strategy="beforeInteractive" />
+    <Script src="/emergency-stop.js" strategy={"beforeInteractive"} />
         {/* Header principal */}
         <Header />
         
