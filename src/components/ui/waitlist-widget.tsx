@@ -39,13 +39,13 @@ export function WaitlistWidget() {
           </div>
           <div className="flex items-center gap-2 text-sm">
             <span className="text-green-600">✓</span>
-            <span className="text-gray-700">Superpoderes desbloqueables </span>
+            <span className="text-gray-700">Opcional: desbloquea superpoderes</span>
           </div>
         </div>
 
         <div className="text-center pt-3 border-t border-gray-100">
           <p className="text-sm text-gray-600 italic">
-            El mejor software ganadero se comparte <br />entre amigos
+            "El mejor software ganadero se comparte entre amigos"
           </p>
           <p className="text-xs text-gray-400 mt-1">
             Solo por invitación • 2025
