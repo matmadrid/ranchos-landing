@@ -45,7 +45,7 @@ export function WaitlistWidget() {
 
         <div className="text-center pt-3 border-t border-gray-100">
           <p className="text-sm text-gray-600 italic">
-            "El mejor software ganadero se comparte entre amigos"
+            El mejor software ganadero se comparte entre amigos
           </p>
           <p className="text-xs text-gray-400 mt-1">
             Solo por invitación • 2025
