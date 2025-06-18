@@ -49,7 +49,7 @@ export default function InvitePage() {
 
         {/* Footer text */}
         <p className="text-center text-sm text-gray-500 mt-8">
-          Si conoces a alguien usando RanchOS, pídele que te invite.
+          Si conoces a alguien usando RanchOS, pídele un código.
         </p>
       </div>
     </div>
